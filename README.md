@@ -213,7 +213,7 @@ MAX_DISTANCE_KM=50
 - Direct messaging between verified users
 - User blocking/reporting
 - Photo verification system
-- In-app payment for premium features
+- In-app payment for Advertisers
 - Video chat capabilities
 - Push notifications
 - User profiles with photo gallery
