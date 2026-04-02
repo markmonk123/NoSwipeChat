@@ -1,0 +1,39 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://replace-me.ondigitalocean.app/api",
+        "EXPO_PUBLIC_SOCKET_URL": "https://replace-me.ondigitalocean.app",
+        "EXPO_PUBLIC_SOCKET_PATH": "/socket.io",
+        "EXPO_PUBLIC_FACEBOOK_APP_ID": "REPLACE_ME"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://replace-me.ondigitalocean.app/api",
+        "EXPO_PUBLIC_SOCKET_URL": "https://replace-me.ondigitalocean.app",
+        "EXPO_PUBLIC_SOCKET_PATH": "/socket.io",
+        "EXPO_PUBLIC_FACEBOOK_APP_ID": "REPLACE_ME"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "track": "internal"
+      },
+      "ios": {
+        "ascAppId": "REPLACE_ME"
+      }
+    }
+  }
+}

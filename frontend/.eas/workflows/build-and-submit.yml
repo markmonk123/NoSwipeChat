@@ -1,0 +1,33 @@
+name: build-and-submit
+
+on:
+  workflow_dispatch:
+
+jobs:
+  android-production:
+    type: build
+    params:
+      platform: android
+      profile: production
+
+  ios-production:
+    type: build
+    params:
+      platform: ios
+      profile: production
+
+  submit-android:
+    needs:
+      - android-production
+    type: submit
+    params:
+      platform: android
+      profile: production
+
+  submit-ios:
+    needs:
+      - ios-production
+    type: submit
+    params:
+      platform: ios
+      profile: production

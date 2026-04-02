@@ -6,6 +6,9 @@ const fs = require('fs');
 const socketIO = require('socket.io');
 require('dotenv').config();
 const User = require('./models/User');
+const Message = require('./models/Message');
+const { connectDatabase } = require('./config/db');
+const { getComplianceStatus } = require('./utils/compliance');
 
 // Import routes and middleware
 const authRoutes = require('./routes/auth');
@@ -37,16 +40,46 @@ if (process.env.HTTPS_KEY_PATH && process.env.HTTPS_CERT_PATH) {
   console.log('HTTPS cert paths not set; using HTTP');
 }
 
+const parseAllowedOrigins = () => {
+  const rawOrigins = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '';
+  return rawOrigins
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+};
+
+const allowedOrigins = parseAllowedOrigins();
+
+const isAllowedOrigin = (origin) => {
+  if (!origin || allowedOrigins.length === 0) {
+    return true;
+  }
+
+  return allowedOrigins.includes(origin);
+};
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (isAllowedOrigin(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Origin not allowed by CORS'));
+  },
+  credentials: true
+};
+
 const io = socketIO(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: allowedOrigins.length > 0 ? allowedOrigins : true,
     methods: ['GET', 'POST'],
     credentials: true
-  }
+  },
+  path: process.env.SOCKET_IO_PATH || '/socket.io'
 });
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -57,10 +90,22 @@ app.set('io', io);
 app.use('/auth', authRoutes);
 app.use('/chat', chatRoutes);
 app.use('/users', userRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check
-app.get('/health', (req, res) => {
+app.get(['/health', '/api/health'], (req, res) => {
   res.json({ status: 'Server is running' });
+});
+
+app.get(['/config/public', '/api/config/public'], (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    facebookAppId:
+      process.env.FACEBOOK_APP_ID || process.env.EXPO_PUBLIC_FACEBOOK_APP_ID || '',
+    socketPath: process.env.SOCKET_IO_PATH || '/socket.io'
+  });
 });
 
 // Error handling middleware
@@ -99,8 +144,8 @@ io.on('connection', (socket) => {
 
     try {
       const [fromUser, toUser] = await Promise.all([
-        User.findById(fromUserId).select('blockedUsers'),
-        User.findById(toUserId).select('blockedUsers')
+        User.findById(fromUserId).select('blockedUsers facebookId phoneVerified dateOfBirth'),
+        User.findById(toUserId).select('blockedUsers facebookId phoneVerified dateOfBirth')
       ]);
 
       const isBlocked =
@@ -113,6 +158,17 @@ io.on('connection', (socket) => {
         io.to(socket.id).emit('direct-message-blocked', {
           toUserId,
           reason: 'blocked'
+        });
+        return;
+      }
+
+      const fromCompliance = getComplianceStatus(fromUser);
+      const toCompliance = getComplianceStatus(toUser);
+
+      if (!fromCompliance.isCompliant || !toCompliance.isCompliant) {
+        io.to(socket.id).emit('direct-message-blocked', {
+          toUserId,
+          reason: 'compliance'
         });
         return;
       }
@@ -136,13 +192,40 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('send-message', (data) => {
+  socket.on('send-message', async (data) => {
     const { userId, city, message } = data;
-    io.to(`city-${city}`).emit('receive-message', {
-      userId,
-      message,
-      timestamp: new Date()
-    });
+    if (!userId || !city || !message) return;
+
+    try {
+      const trimmedMessage = String(message).trim();
+      if (!trimmedMessage) {
+        return;
+      }
+
+      const user = await User.findById(userId).select(
+        'facebookId phoneVerified dateOfBirth name profilePicture'
+      );
+      const compliance = getComplianceStatus(user);
+      if (!compliance.isCompliant) {
+        return;
+      }
+
+      const createdMessage = await Message.create({
+        userId,
+        city,
+        message: trimmedMessage
+      });
+
+      io.to(`city-${city}`).emit('receive-message', {
+        userId,
+        userName: user.name,
+        profilePicture: user.profilePicture,
+        message: createdMessage.message,
+        timestamp: createdMessage.createdAt || new Date().toISOString()
+      });
+    } catch (err) {
+      console.error('Error delivering city message', err);
+    }
   });
 
   socket.on('disconnect', () => {
@@ -154,8 +237,18 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+
+const startServer = async () => {
+  await connectDatabase();
+
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
+
+startServer().catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
 
 module.exports = server;

@@ -1,0 +1,69 @@
+name: noswipechat
+region: nyc
+
+ingress:
+  rules:
+    - match:
+        path:
+          prefix: /api
+      component:
+        name: api
+        preserve_path_prefix: true
+    - match:
+        path:
+          prefix: /socket.io
+      component:
+        name: api
+        preserve_path_prefix: true
+    - match:
+        path:
+          prefix: /
+      component:
+        name: web
+
+services:
+  - name: api
+    github:
+      repo: markmonk123/NoSwipeChat
+      branch: main
+      deploy_on_push: true
+    source_dir: .
+    dockerfile_path: backend/Dockerfile
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    health_check:
+      http_path: /health
+    envs:
+      - key: NODE_ENV
+        scope: RUN_TIME
+        value: production
+      - key: FRONTEND_URLS
+        scope: RUN_TIME
+        value: ${APP_URL}
+      - key: MONGODB_URI
+        scope: RUN_TIME
+        type: SECRET
+        value: REPLACE_WITH_MANAGED_MONGODB_URI
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: REPLACE_WITH_LONG_RANDOM_SECRET
+      - key: FACEBOOK_APP_ID
+        scope: RUN_TIME
+        type: SECRET
+        value: REPLACE_WITH_FACEBOOK_APP_ID
+      - key: PHONE_VERIFICATION_TEST_CODE
+        scope: RUN_TIME
+        type: SECRET
+        value: REPLACE_WITH_DEV_ONLY_CODE
+  - name: web
+    github:
+      repo: markmonk123/NoSwipeChat
+      branch: main
+      deploy_on_push: true
+    source_dir: .
+    dockerfile_path: frontend/Dockerfile
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs

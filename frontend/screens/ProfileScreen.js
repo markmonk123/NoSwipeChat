@@ -12,9 +12,12 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import axios from 'axios';
+import PersonalityOrb from '../components/PersonalityOrb';
+import { buildApiUrl } from '../config/runtime';
 
 const ProfileScreen = () => {
   const [profile, setProfile] = useState(null);
+  const [compliance, setCompliance] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -22,6 +25,9 @@ const ProfileScreen = () => {
     gender: '',
     bio: '',
     interests: '',
+    dateOfBirth: '',
+    phoneNumber: '',
+    phoneVerificationCode: '',
   });
 
   useEffect(() => {
@@ -33,19 +39,24 @@ const ProfileScreen = () => {
       setLoading(true);
       const token = await AsyncStorage.getItem('authToken');
 
-      const response = await axios.get('http://localhost:5000/users/profile', {
+      const response = await axios.get(buildApiUrl('/users/profile'), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      setProfile(response.data);
-      setFormData({
-        age: response.data.age?.toString() || '',
-        gender: response.data.gender || '',
-        bio: response.data.bio || '',
-        interests: response.data.interests?.join(', ') || '',
-      });
+      const data = response.data;
+      setProfile(data);
+      setCompliance(data.compliance || null);
+      setFormData((prev) => ({
+        ...prev,
+        age: data.age?.toString() || '',
+        gender: data.gender || '',
+        bio: data.bio || '',
+        interests: data.interests?.join(', ') || '',
+        dateOfBirth: data.dateOfBirth ? data.dateOfBirth.slice(0, 10) : '',
+        phoneNumber: data.phoneNumber || '',
+      }));
     } catch (error) {
       Alert.alert('Error', 'Failed to load profile');
       console.error(error);
@@ -63,12 +74,14 @@ const ProfileScreen = () => {
       const location = await Location.getCurrentPositionAsync({});
 
       const response = await axios.put(
-        'http://localhost:5000/users/profile',
+        buildApiUrl('/users/profile'),
         {
           age: parseInt(formData.age),
           gender: formData.gender,
           bio: formData.bio,
           interests: formData.interests.split(',').map((i) => i.trim()),
+          dateOfBirth: formData.dateOfBirth,
+          phoneNumber: formData.phoneNumber,
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
           city: profile?.city || 'Unknown',
@@ -81,10 +94,39 @@ const ProfileScreen = () => {
       );
 
       setProfile(response.data);
+      setCompliance(response.data.compliance || null);
       setIsEditing(false);
       Alert.alert('Success', 'Profile updated successfully');
     } catch (error) {
-      Alert.alert('Error', 'Failed to update profile');
+      Alert.alert('Error', error?.response?.data?.error || 'Failed to update profile');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyPhone = async () => {
+    if (!formData.phoneVerificationCode) {
+      Alert.alert('Error', 'Enter the verification code.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('authToken');
+      await axios.post(
+        buildApiUrl('/users/phone/verify'),
+        { code: formData.phoneVerificationCode },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      await fetchProfile();
+      Alert.alert('Success', 'Phone number verified');
+    } catch (error) {
+      Alert.alert('Error', error?.response?.data?.error || 'Failed to verify phone');
       console.error(error);
     } finally {
       setLoading(false);
@@ -130,6 +172,34 @@ const ProfileScreen = () => {
       </View>
 
       <View style={styles.profileContainer}>
+        <View style={styles.personalitySection}>
+          <Text style={styles.sectionTitle}>Personality Profile</Text>
+          {profile?.personalityProfile?.vector35?.length === 35 ? (
+            <PersonalityOrb vector={profile.personalityProfile.vector35} size={220} />
+          ) : (
+            <View style={styles.personalityPlaceholder}>
+              <Text style={styles.personalityPlaceholderText}>
+                Personality profile not available yet.
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {compliance && (
+          <View style={styles.complianceBox}>
+            <Text style={styles.sectionTitle}>Compliance Status</Text>
+            <Text style={styles.complianceItem}>
+              Age 18+: {compliance.adult ? 'OK' : 'Missing'}
+            </Text>
+            <Text style={styles.complianceItem}>
+              Phone Verified: {compliance.phoneVerified ? 'OK' : 'Missing'}
+            </Text>
+            <Text style={styles.complianceItem}>
+              Facebook Linked: {compliance.hasFacebook ? 'OK' : 'Missing'}
+            </Text>
+          </View>
+        )}
+
         <Text style={styles.label}>Name</Text>
         <Text style={styles.displayText}>{profile.name}</Text>
 
@@ -146,6 +216,36 @@ const ProfileScreen = () => {
               onChangeText={(text) => setFormData({ ...formData, age: text })}
               keyboardType="numeric"
             />
+
+            <Text style={styles.label}>Date of Birth (YYYY-MM-DD)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="1995-04-23"
+              value={formData.dateOfBirth}
+              onChangeText={(text) => setFormData({ ...formData, dateOfBirth: text })}
+            />
+
+            <Text style={styles.label}>Phone Number</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="+15551234567"
+              value={formData.phoneNumber}
+              onChangeText={(text) => setFormData({ ...formData, phoneNumber: text })}
+              keyboardType="phone-pad"
+            />
+
+            <Text style={styles.label}>Phone Verification Code</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="000000"
+              value={formData.phoneVerificationCode}
+              onChangeText={(text) => setFormData({ ...formData, phoneVerificationCode: text })}
+              keyboardType="numeric"
+            />
+
+            <TouchableOpacity style={styles.verifyButton} onPress={handleVerifyPhone}>
+              <Text style={styles.verifyButtonText}>Verify Phone</Text>
+            </TouchableOpacity>
 
             <Text style={styles.label}>Gender</Text>
             <View style={styles.genderContainer}>
@@ -208,6 +308,23 @@ const ProfileScreen = () => {
               <>
                 <Text style={styles.label}>Age</Text>
                 <Text style={styles.displayText}>{profile.age}</Text>
+              </>
+            )}
+            {profile.dateOfBirth && (
+              <>
+                <Text style={styles.label}>Date of Birth</Text>
+                <Text style={styles.displayText}>
+                  {profile.dateOfBirth.slice(0, 10)}
+                </Text>
+              </>
+            )}
+            {profile.phoneNumber && (
+              <>
+                <Text style={styles.label}>Phone</Text>
+                <Text style={styles.displayText}>
+                  {profile.phoneNumber}{' '}
+                  {profile.phoneVerified ? '(Verified)' : '(Unverified)'}
+                </Text>
               </>
             )}
             {profile.gender && (
@@ -278,6 +395,49 @@ const styles = StyleSheet.create({
   profileContainer: {
     padding: 20,
   },
+  personalitySection: {
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 12,
+  },
+  personalityPlaceholder: {
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    backgroundColor: '#fafafa',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  personalityPlaceholderText: {
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 12,
+  },
+  complianceBox: {
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 20,
+    backgroundColor: '#fff9f9',
+  },
+  complianceItem: {
+    fontSize: 13,
+    color: '#444',
+    marginBottom: 6,
+    fontWeight: '600',
+  },
   label: {
     fontSize: 12,
     fontWeight: '600',
@@ -302,6 +462,17 @@ const styles = StyleSheet.create({
   bioInput: {
     height: 100,
     textAlignVertical: 'top',
+  },
+  verifyButton: {
+    marginTop: 10,
+    backgroundColor: '#ffe5e5',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  verifyButtonText: {
+    color: '#FF6B6B',
+    fontWeight: '700',
   },
   genderContainer: {
     flexDirection: 'row',

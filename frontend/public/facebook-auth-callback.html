@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Facebook Login</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        const hash = new URLSearchParams(window.location.hash.slice(1));
+        const accessToken = hash.get('access_token');
+        const error = hash.get('error') || hash.get('error_description');
+
+        if (window.opener) {
+          window.opener.postMessage(
+            {
+              type: 'facebook-auth-result',
+              accessToken: accessToken || null,
+              error: error || null
+            },
+            window.location.origin
+          );
+        }
+
+        window.close();
+      })();
+    </script>
+  </body>
+</html>

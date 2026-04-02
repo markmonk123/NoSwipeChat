@@ -28,6 +28,13 @@ const userSchema = new mongoose.Schema({
   profilePicture: String,
   bio: String,
   age: Number,
+  dateOfBirth: Date,
+  phoneNumber: String,
+  phoneVerified: {
+    type: Boolean,
+    default: false
+  },
+  phoneVerifiedAt: Date,
   gender: {
     type: String,
     enum: ['male', 'female', 'other']
@@ -58,6 +65,28 @@ const userSchema = new mongoose.Schema({
     default: 50 // km
   },
   interests: [String],
+  personalityProfile: {
+    vector35: [Number],
+    vector73: [Number],
+    consent: {
+      status: {
+        type: Boolean,
+        default: false
+      },
+      sources: {
+        type: [String],
+        default: []
+      },
+      grantedAt: Date,
+      revokedAt: Date
+    },
+    visibility: {
+      type: String,
+      enum: ['private', 'matches'],
+      default: 'matches'
+    },
+    updatedAt: Date
+  },
   createdAt: {
     type: Date,
     default: Date.now
