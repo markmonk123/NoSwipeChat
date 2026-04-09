@@ -15,6 +15,7 @@ const authRoutes = require('./routes/auth');
 const chatRoutes = require('./routes/chat');
 const userRoutes = require('./routes/users');
 const { errorHandler } = require('./middleware/errorHandler');
+const { getTextEmbedding, checkEmbeddingsServiceHealth } = require('./utils/embeddings');
 
 const app = express();
 
@@ -85,6 +86,15 @@ app.use(express.urlencoded({ extended: true }));
 
 // Store Socket.io instance for access in routes
 app.set('io', io);
+
+// Store embeddings service health status
+let embeddingsServiceHealthy = false;
+setInterval(async () => {
+  embeddingsServiceHealthy = await checkEmbeddingsServiceHealth();
+  if (embeddingsServiceHealthy) {
+    console.log('✓ Embeddings service is healthy');
+  }
+}, 30000);
 
 // Routes
 app.use('/auth', authRoutes);
@@ -216,23 +226,36 @@ io.on('connection', (socket) => {
         message: trimmedMessage
       });
 
-      io.to(`city-${city}`).emit('receive-message', {
+      // Optional: Get embedding for message if embeddings service is healthy
+      let embedding = null;
+      if (embeddingsServiceHealthy) {
+        embedding = await getTextEmbedding(trimmedMessage);
+      }
+
+      const messagePayload = {
         userId,
         userName: user.name,
         profilePicture: user.profilePicture,
         message: createdMessage.message,
         timestamp: createdMessage.createdAt || new Date().toISOString()
-      });
-    } catch (err) {
-      console.error('Error delivering city message', err);
-    }
-  });
 
   socket.on('disconnect', () => {
     if (socket.userId) {
       userSocketMap.delete(socket.userId);
     }
     console.log(`User disconnected: ${socket.id}`);
+  });
+});
+
+// Service status endpoint
+app.get(['/status', '/api/status'], (req, res) => {
+  res.json({
+    backend: { status: 'running', port: PORT },
+    embeddings: { 
+      status: embeddingsServiceHealthy ? 'healthy' : 'unhealthy', 
+      url: process.env.EMBEDDINGS_SERVICE_URL || 'http://embeddings:8000'
+    },
+    timestamp: new Date().toISOString()
   });
 });
 

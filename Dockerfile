@@ -10,8 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --user -r requirements.txt
+RUN pip install --no-cache-dir \
+    --disable-pip-version-check \
+    -r requirements.txt
 
 # Stage 2: Runtime
 FROM python:3.11-slim
@@ -24,16 +25,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python packages from builder
-COPY --from=builder /root/.local /root/.local
-
-# Set PATH to use local pip packages
-ENV PATH=/root/.local/bin:$PATH \
-    PYTHONUNBUFFERED=1
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
 COPY main.py .
 
-# Expose port
 EXPOSE 8000
 
 # Health check
