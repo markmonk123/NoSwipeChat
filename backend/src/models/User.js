@@ -1,5 +1,32 @@
 const mongoose = require('mongoose');
 
+const socialConsentSchema = new mongoose.Schema({
+  status: {
+    type: Boolean,
+    default: false
+  },
+  available: {
+    type: Boolean,
+    default: true
+  },
+  requestedAt: Date,
+  grantedAt: Date,
+  revokedAt: Date,
+  note: String
+}, { _id: false });
+
+const facebookFriendSchema = new mongoose.Schema({
+  id: String,
+  name: String
+}, { _id: false });
+
+const facebookPostSchema = new mongoose.Schema({
+  id: String,
+  message: String,
+  createdTime: Date,
+  permalinkUrl: String
+}, { _id: false });
+
 const userSchema = new mongoose.Schema({
   facebookId: {
     type: String,
@@ -86,6 +113,67 @@ const userSchema = new mongoose.Schema({
       default: 'matches'
     },
     updatedAt: Date
+  },
+  socialDataSettings: {
+    facebook: {
+      requestedScopes: {
+        type: [String],
+        default: []
+      },
+      grantedScopes: {
+        type: [String],
+        default: []
+      },
+      declinedScopes: {
+        type: [String],
+        default: []
+      },
+      friendsList: {
+        type: socialConsentSchema,
+        default: () => ({})
+      },
+      timelinePosts: {
+        type: socialConsentSchema,
+        default: () => ({})
+      },
+      privateMessages: {
+        type: socialConsentSchema,
+        default: () => ({
+          available: false,
+          note: 'Facebook Login does not provide direct access to private messages in this app flow.'
+        })
+      },
+      extendedSocialGraph: {
+        type: socialConsentSchema,
+        default: () => ({})
+      },
+      lastUpdatedAt: Date
+    }
+  },
+  socialData: {
+    facebook: {
+      friendsList: {
+        totalCount: Number,
+        sample: {
+          type: [facebookFriendSchema],
+          default: []
+        },
+        fetchedAt: Date
+      },
+      timelinePosts: {
+        totalCount: Number,
+        sample: {
+          type: [facebookPostSchema],
+          default: []
+        },
+        fetchedAt: Date
+      },
+      extendedSocialGraph: {
+        connectedFriendsCount: Number,
+        note: String,
+        fetchedAt: Date
+      }
+    }
   },
   createdAt: {
     type: Date,

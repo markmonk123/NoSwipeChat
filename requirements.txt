@@ -1,0 +1,10 @@
+# NoSwipeChat Python requirements
+# JS / Node / Expo dependencies are tracked in requirementsNoSwipe.txt.
+
+fastapi==0.104.1
+numpy==1.26.2
+pydantic==2.5.0
+requests==2.31.0
+torch==2.1.1
+transformers==4.35.2
+uvicorn==0.24.0

@@ -14,12 +14,17 @@ import * as Location from 'expo-location';
 import axios from 'axios';
 import PersonalityOrb from '../components/PersonalityOrb';
 import { buildApiUrl } from '../config/runtime';
+import {
+  DEFAULT_SOCIAL_DATA_CHOICES,
+  SOCIAL_DATA_OPTIONS
+} from '../config/facebookSocialData';
 
 const ProfileScreen = () => {
   const [profile, setProfile] = useState(null);
   const [compliance, setCompliance] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [socialChoices, setSocialChoices] = useState(DEFAULT_SOCIAL_DATA_CHOICES);
   const [formData, setFormData] = useState({
     age: '',
     gender: '',
@@ -48,6 +53,12 @@ const ProfileScreen = () => {
       const data = response.data;
       setProfile(data);
       setCompliance(data.compliance || null);
+      setSocialChoices({
+        friendsList: Boolean(data?.socialDataSettings?.facebook?.friendsList?.status),
+        timelinePosts: Boolean(data?.socialDataSettings?.facebook?.timelinePosts?.status),
+        privateMessages: Boolean(data?.socialDataSettings?.facebook?.privateMessages?.status),
+        extendedSocialGraph: Boolean(data?.socialDataSettings?.facebook?.extendedSocialGraph?.status)
+      });
       setFormData((prev) => ({
         ...prev,
         age: data.age?.toString() || '',
@@ -144,6 +155,63 @@ const ProfileScreen = () => {
     }
   };
 
+  const toggleSocialChoice = (key) => {
+    setSocialChoices((current) => ({
+      ...current,
+      [key]: !current[key]
+    }));
+  };
+
+  const handleSaveSocialData = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('authToken');
+      const currentFacebookSettings = profile?.socialDataSettings?.facebook || {};
+      const response = await axios.put(
+        buildApiUrl('/users/social-data'),
+        {
+          facebook: {
+            requestedScopes: currentFacebookSettings.requestedScopes || [],
+            grantedScopes: currentFacebookSettings.grantedScopes || [],
+            declinedScopes: currentFacebookSettings.declinedScopes || [],
+            friendsList: { status: socialChoices.friendsList },
+            timelinePosts: { status: socialChoices.timelinePosts },
+            privateMessages: {
+              status: socialChoices.privateMessages,
+              available: false,
+              note: 'Facebook Login does not provide direct access to private messages in this app flow.'
+            },
+            extendedSocialGraph: { status: socialChoices.extendedSocialGraph }
+          }
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      setProfile((current) => ({
+        ...current,
+        socialDataSettings: response.data.socialDataSettings,
+        socialData: response.data.socialData
+      }));
+
+      Alert.alert(
+        'Social data choices saved',
+        'Turning a Facebook category on may require logging in again before new data can be imported.'
+      );
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error?.response?.data?.error || 'Failed to save social data choices'
+      );
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -159,6 +227,9 @@ const ProfileScreen = () => {
       </View>
     );
   }
+
+  const socialSettings = profile?.socialDataSettings?.facebook || {};
+  const socialData = profile?.socialData?.facebook || {};
 
   return (
     <ScrollView style={styles.container}>
@@ -199,6 +270,59 @@ const ProfileScreen = () => {
             </Text>
           </View>
         )}
+
+        <View style={styles.socialDataBox}>
+          <Text style={styles.sectionTitle}>Social Data Controls</Text>
+          <Text style={styles.socialDataIntro}>
+            Choose which Facebook-linked categories NoSwipeChat should keep requesting or storing.
+            Turning a category on may require you to sign in with Facebook again before fresh data is imported.
+          </Text>
+
+          {SOCIAL_DATA_OPTIONS.map((option) => {
+            const selected = socialChoices[option.key];
+            const savedSetting = socialSettings[option.key];
+            return (
+              <TouchableOpacity
+                key={option.key}
+                style={[styles.socialRow, selected && styles.socialRowSelected]}
+                onPress={() => toggleSocialChoice(option.key)}
+              >
+                <View style={[styles.socialBadge, selected && styles.socialBadgeSelected]}>
+                  <Text style={[styles.socialBadgeText, selected && styles.socialBadgeTextSelected]}>
+                    {selected ? 'On' : 'Off'}
+                  </Text>
+                </View>
+                <View style={styles.socialRowCopy}>
+                  <Text style={styles.socialRowTitle}>{option.label}</Text>
+                  <Text style={styles.socialRowBody}>{option.description}</Text>
+                  {savedSetting?.note ? (
+                    <Text style={styles.socialRowNote}>{savedSetting.note}</Text>
+                  ) : null}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+
+          <TouchableOpacity style={styles.socialSaveButton} onPress={handleSaveSocialData}>
+            <Text style={styles.socialSaveButtonText}>Save Social Data Choices</Text>
+          </TouchableOpacity>
+
+          {socialData?.friendsList?.totalCount ? (
+            <Text style={styles.socialSummary}>
+              Imported app-connected Facebook friends: {socialData.friendsList.totalCount}
+            </Text>
+          ) : null}
+          {socialData?.timelinePosts?.totalCount ? (
+            <Text style={styles.socialSummary}>
+              Imported Facebook timeline posts: {socialData.timelinePosts.totalCount}
+            </Text>
+          ) : null}
+          {typeof socialData?.extendedSocialGraph?.connectedFriendsCount === 'number' ? (
+            <Text style={styles.socialSummary}>
+              Derived social graph friend signals: {socialData.extendedSocialGraph.connectedFriendsCount}
+            </Text>
+          ) : null}
+        </View>
 
         <Text style={styles.label}>Name</Text>
         <Text style={styles.displayText}>{profile.name}</Text>
@@ -437,6 +561,91 @@ const styles = StyleSheet.create({
     color: '#444',
     marginBottom: 6,
     fontWeight: '600',
+  },
+  socialDataBox: {
+    borderWidth: 1,
+    borderColor: '#f0d3cd',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+    backgroundColor: '#fff7f3',
+  },
+  socialDataIntro: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#5d5552',
+    marginBottom: 12,
+  },
+  socialRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#f1d5cf',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    backgroundColor: '#ffffff',
+  },
+  socialRowSelected: {
+    borderColor: '#FF6B6B',
+    backgroundColor: '#fff0f0',
+  },
+  socialBadge: {
+    minWidth: 44,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    backgroundColor: '#efe4e0',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  socialBadgeSelected: {
+    backgroundColor: '#FF6B6B',
+  },
+  socialBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#7c706c',
+  },
+  socialBadgeTextSelected: {
+    color: '#ffffff',
+  },
+  socialRowCopy: {
+    flex: 1,
+  },
+  socialRowTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 4,
+  },
+  socialRowBody: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#5d5552',
+  },
+  socialRowNote: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#b35d4e',
+    marginTop: 6,
+  },
+  socialSaveButton: {
+    backgroundColor: '#FF6B6B',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  socialSaveButtonText: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  socialSummary: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#5d5552',
+    marginTop: 10,
   },
   label: {
     fontSize: 12,

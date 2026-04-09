@@ -1,0 +1,23 @@
+services:
+  roberta-embeddings:
+    image: noswipechat-embeddings
+    build:
+      context: .
+      dockerfile: Dockerfile.embeddings
+    container_name: noswipechat-embeddings
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./main.py:/app/main.py
+      - ./requirementsNoSwipe.txt:/app/requirementsNoSwipe.txt:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    # Uncomment the lines below if you have GPU support and want to use it
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]

@@ -42,6 +42,69 @@ const buildTokenResponse = (user) => {
   };
 };
 
+const toStringArray = (value) =>
+  Array.isArray(value)
+    ? value.map((item) => String(item).trim()).filter(Boolean)
+    : [];
+
+const sanitizeConsent = (value, fallback = {}) => {
+  const status = typeof value?.status === 'boolean' ? value.status : Boolean(fallback?.status);
+  const available = typeof value?.available === 'boolean'
+    ? value.available
+    : (typeof fallback?.available === 'boolean' ? fallback.available : true);
+
+  return {
+    status,
+    available,
+    requestedAt: status ? new Date() : undefined,
+    grantedAt: value?.grantedAt ? new Date(value.grantedAt) : (status && available ? new Date() : undefined),
+    revokedAt: status ? undefined : new Date(),
+    note: typeof value?.note === 'string' ? value.note : fallback?.note
+  };
+};
+
+const sanitizeFriendsList = (value) => {
+  const sample = Array.isArray(value?.sample)
+    ? value.sample.slice(0, 25).map((item) => ({
+      id: item?.id ? String(item.id) : '',
+      name: item?.name ? String(item.name) : 'Facebook friend'
+    })).filter((item) => item.id || item.name)
+    : [];
+
+  return {
+    totalCount: Number.isFinite(Number(value?.totalCount)) ? Number(value.totalCount) : sample.length,
+    sample,
+    fetchedAt: value?.fetchedAt ? new Date(value.fetchedAt) : new Date()
+  };
+};
+
+const sanitizeTimelinePosts = (value) => {
+  const sample = Array.isArray(value?.sample)
+    ? value.sample.slice(0, 10).map((item) => ({
+      id: item?.id ? String(item.id) : '',
+      message: item?.message ? String(item.message).slice(0, 500) : '',
+      createdTime: item?.createdTime ? new Date(item.createdTime) : undefined,
+      permalinkUrl: item?.permalinkUrl ? String(item.permalinkUrl) : ''
+    })).filter((item) => item.id)
+    : [];
+
+  return {
+    totalCount: Number.isFinite(Number(value?.totalCount)) ? Number(value.totalCount) : sample.length,
+    sample,
+    fetchedAt: value?.fetchedAt ? new Date(value.fetchedAt) : new Date()
+  };
+};
+
+const sanitizeExtendedSocialGraph = (value, fallbackFriendsCount = 0) => ({
+  connectedFriendsCount: Number.isFinite(Number(value?.connectedFriendsCount))
+    ? Number(value.connectedFriendsCount)
+    : fallbackFriendsCount,
+  note: typeof value?.note === 'string'
+    ? value.note
+    : 'Facebook only returns app-connected friend graph signals that the current app is allowed to access.',
+  fetchedAt: value?.fetchedAt ? new Date(value.fetchedAt) : new Date()
+});
+
 const handleProviderCallback = (provider) => async (req, res) => {
   const config = PROVIDER_CONFIG[provider];
   if (!config) {
@@ -49,7 +112,7 @@ const handleProviderCallback = (provider) => async (req, res) => {
   }
 
   const { idField, verificationFlag, verificationDateField } = config;
-  const { name, email, profilePicture } = req.body;
+  const { name, email, profilePicture, facebookDataAccess } = req.body;
   const providerId = req.body[config.idField];
 
   if (!providerId || !email || !name) {
@@ -107,6 +170,56 @@ const handleProviderCallback = (provider) => async (req, res) => {
   );
   if (user.isVerified !== verified) {
     user.isVerified = verified;
+    await user.save();
+  }
+
+  if (provider === 'facebook' && facebookDataAccess) {
+    const requestedScopes = toStringArray(facebookDataAccess.requestedScopes);
+    const grantedScopes = toStringArray(facebookDataAccess.grantedScopes);
+    const declinedScopes = toStringArray(facebookDataAccess.declinedScopes);
+    const friendsCount = Number(facebookDataAccess?.data?.friendsList?.totalCount) || 0;
+
+    user.socialDataSettings = user.socialDataSettings || {};
+    user.socialDataSettings.facebook = {
+      requestedScopes,
+      grantedScopes,
+      declinedScopes,
+      friendsList: sanitizeConsent(facebookDataAccess?.consents?.friendsList),
+      timelinePosts: sanitizeConsent(facebookDataAccess?.consents?.timelinePosts),
+      privateMessages: sanitizeConsent(
+        facebookDataAccess?.consents?.privateMessages,
+        {
+          available: false,
+          note: 'Facebook Login does not provide direct access to private messages in this app flow.'
+        }
+      ),
+      extendedSocialGraph: sanitizeConsent(facebookDataAccess?.consents?.extendedSocialGraph),
+      lastUpdatedAt: new Date()
+    };
+
+    user.socialData = user.socialData || {};
+    user.socialData.facebook = user.socialData.facebook || {};
+
+    if (facebookDataAccess?.data?.friendsList) {
+      user.socialData.facebook.friendsList = sanitizeFriendsList(facebookDataAccess.data.friendsList);
+    }
+
+    if (facebookDataAccess?.data?.timelinePosts) {
+      user.socialData.facebook.timelinePosts = sanitizeTimelinePosts(facebookDataAccess.data.timelinePosts);
+    }
+
+    if (facebookDataAccess?.data?.extendedSocialGraph) {
+      user.socialData.facebook.extendedSocialGraph = sanitizeExtendedSocialGraph(
+        facebookDataAccess.data.extendedSocialGraph,
+        friendsCount
+      );
+    } else if (facebookDataAccess?.consents?.extendedSocialGraph?.status) {
+      user.socialData.facebook.extendedSocialGraph = sanitizeExtendedSocialGraph(
+        undefined,
+        friendsCount
+      );
+    }
+
     await user.save();
   }
 

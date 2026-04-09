@@ -1,39 +1,44 @@
-FROM node:20-alpine AS frontend-build
-
-WORKDIR /frontend
-
-COPY frontend/package*.json ./
-RUN npm install
-
-COPY frontend ./
-RUN npx expo export --platform web --output-dir dist
-
-FROM node:20-alpine
+# Stage 1: Builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache nginx
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY backend/package*.json ./backend/
-WORKDIR /app/backend
-RUN npm install --omit=dev
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --user -r requirements.txt
 
-COPY backend ./
+# Stage 2: Runtime
+FROM python:3.11-slim
 
 WORKDIR /app
-COPY --from=frontend-build /frontend/dist /usr/share/nginx/html
-COPY frontend/nginx.conf /etc/nginx/http.d/default.conf
 
-RUN sed -i 's|__BACKEND_UPSTREAM__|127.0.0.1:5000|g' /etc/nginx/http.d/default.conf \
-  && mkdir -p /run/nginx
+# Install runtime dependencies (libgomp for torch)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
-ENV NODE_ENV=production
-ENV PORT=5000
-ENV SOCKET_IO_PATH=/socket.io
+# Copy Python packages from builder
+COPY --from=builder /root/.local /root/.local
 
-EXPOSE 8080
-EXPOSE 5000
+# Set PATH to use local pip packages
+ENV PATH=/root/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1
 
-WORKDIR /app/backend
+# Copy application code
+COPY main.py .
 
-CMD ["sh", "-c", "node src/server.js & backend_pid=$!; nginx -g 'daemon off;' & nginx_pid=$!; while kill -0 $backend_pid 2>/dev/null && kill -0 $nginx_pid 2>/dev/null; do sleep 1; done; kill $backend_pid $nginx_pid 2>/dev/null || true; wait $backend_pid"]
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"
+
+# Run the application
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

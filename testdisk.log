@@ -1,0 +1,600 @@
+
+
+Sat Apr  4 15:42:59 2026
+Command line: TestDisk
+
+TestDisk 7.2, Data Recovery Utility, February 2024
+Christophe GRENIER <grenier@cgsecurity.org>
+https://www.cgsecurity.org
+OS: Darwin, kernel 24.6.0 (Darwin Kernel Version 24.6.0: Fri Feb 27 19:34:43 PST 2026; root:xnu-11417.140.69.709.8~1/RELEASE_ARM64_T8103) arm64
+Compiler: GCC 4.2
+ext2fs lib: none, ntfs lib: none, reiserfs lib: none, ewf lib: none, curses lib: ncurses 6.0
+Hard disk list
+Disk /dev/disk4 - 1000 GB / 931 GiB - 1953525168 sectors, sector size=512
+Disk /dev/rdisk1 - 524 MB / 500 MiB - 128000 sectors (RO), sector size=4096
+Disk /dev/rdisk4 - 1000 GB / 931 GiB - 1953525168 sectors, sector size=512
+
+Partition table type (auto): EFI GPT
+Disk /dev/disk4 - 1000 GB / 931 GiB
+Partition table type: EFI GPT
+
+Analyse Disk /dev/disk4 - 1000 GB / 931 GiB - 1953525168 sectors
+hdr_size=92
+hdr_lba_self=1
+hdr_lba_alt=1953525167 (expected 1953525167)
+hdr_lba_start=34
+hdr_lba_end=1953525134
+hdr_lba_table=2
+hdr_entries=128
+hdr_entsz=128
+check_part_gpt failed for partition
+ 2 P MS Reserved               411648     444415      32768 [Microsoft reserved partition]
+Current partition structure:
+ 1 P EFI System                  2048     411647     409600 [Basic data partition]
+No FAT, NTFS, ext2, JFS, Reiser, cramfs or XFS marker
+ 2 P MS Reserved               411648     444415      32768 [Microsoft reserved partition]
+ 2 P MS Reserved               411648     444415      32768 [Microsoft reserved partition]
+Warning: number of heads/cylinder mismatches 255 (NTFS) != 1 (HD)
+Warning: number of sectors per track mismatches 63 (NTFS) != 1 (HD)
+ 3 P MS Data                   444416 1951612927 1951168512 [Basic data partition]
+ 4 P Windows Recovery Env  1951612928 1953519615    1906688
+
+search_part()
+Disk /dev/disk4 - 1000 GB / 931 GiB - 1953525168 sectors
+FAT32 at 2048/0/1
+FAT1 : 6622-7406
+FAT2 : 7407-8191
+start_rootdir : 8192 root cluster : 2
+Data : 8192-409599
+sectors : 409600
+cluster_size : 4
+no_of_cluster : 100352 (2 - 100353)
+fat_length 785 calculated 785
+heads/cylinder 255 (FAT) != 1 (HD)
+sect/track 63 (FAT) != 1 (HD)
+set_FAT_info: name from BS used
+
+FAT32 at 2048/0/1
+FAT: cluster=2(0x2), pos=10240
+     EFI System                  2048     411647     409600 [EFI System Partition] [NO NAME]
+     FAT32, blocksize=2048, 209 MB / 200 MiB
+NTFS at 444416/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1951168512
+sectors_per_cluster       8
+mft_lcn                   786432
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+NTFS part_offset=227540992, part_size=998998278144, sector_size=512
+NTFS partition cannot be added (part_offset<part_size).
+NTFS at 444416/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1951168512
+sectors_per_cluster       8
+mft_lcn                   786432
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data                   444416 1951612927 1951168512
+     NTFS, blocksize=4096, 998 GB / 930 GiB
+NTFS at 1951612928/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1906688
+sectors_per_cluster       8
+mft_lcn                   79445
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data               1949706241 1951612928    1906688
+     NTFS found using backup sector, blocksize=4096, 976 MB / 931 MiB
+NTFS at 1951612928/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1906688
+sectors_per_cluster       8
+mft_lcn                   79445
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data               1951612928 1953519615    1906688
+     NTFS, blocksize=4096, 976 MB / 931 MiB
+NTFS at 1953521663/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1505280
+sectors_per_cluster       8
+mft_lcn                   62720
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data               1952016384 1953521663    1505280
+     NTFS found using backup sector, blocksize=4096, 770 MB / 735 MiB
+NTFS at 1953521663/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1505280
+sectors_per_cluster       8
+mft_lcn                   62720
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+NTFS: Can't read MFT
+     MS Data               1953521663 1955026942    1505280
+     NTFS, blocksize=4096, 770 MB / 735 MiB
+This partition ends after the disk limits. (start=1953521663, size=1505280, end=1955026942, disk end=1953525168)
+NTFS at 1953523711/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1953079296
+sectors_per_cluster       8
+mft_lcn                   786432
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data                   444416 1953523711 1953079296
+     NTFS found using backup sector, blocksize=4096, 999 GB / 931 GiB
+NTFS at 1953523711/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1953079296
+sectors_per_cluster       8
+mft_lcn                   786432
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+NTFS: Can't read MFT
+     MS Data               1953523711 3906603006 1953079296
+     NTFS, blocksize=4096, 999 GB / 931 GiB
+This partition ends after the disk limits. (start=1953523711, size=1953079296, end=3906603006, disk end=1953525168)
+Disk /dev/disk4 - 1000 GB / 931 GiB - 1953525168 sectors
+Check the hard disk size: HD jumper settings, BIOS detection...
+The hard disk (1000 GB / 931 GiB) seems too small! (< 2000 GB / 1862 GiB)
+The following partitions can't be recovered:
+     MS Data               1953521663 1955026942    1505280
+     NTFS, blocksize=4096, 770 MB / 735 MiB
+     MS Data               1953523711 3906603006 1953079296
+     NTFS, blocksize=4096, 999 GB / 931 GiB
+
+Results
+   P EFI System                  2048     411647     409600 [EFI System Partition] [NO NAME]
+     FAT32, blocksize=2048, 209 MB / 200 MiB
+     MS Data                   444416 1951612927 1951168512
+     NTFS, blocksize=4096, 998 GB / 930 GiB
+     MS Data                   444416 1953523711 1953079296
+     NTFS found using backup sector, blocksize=4096, 999 GB / 931 GiB
+     MS Data               1949706241 1951612928    1906688
+     NTFS found using backup sector, blocksize=4096, 976 MB / 931 MiB
+     MS Data               1951612928 1953519615    1906688
+     NTFS, blocksize=4096, 976 MB / 931 MiB
+     MS Data               1952016384 1953521663    1505280
+     NTFS found using backup sector, blocksize=4096, 770 MB / 735 MiB
+
+interface_write()
+ 1 P EFI System                  2048     411647     409600 [EFI System Partition] [NO NAME]
+
+     MS Data                   444416 1951612927 1951168512
+     NTFS, blocksize=4096, 998 GB / 930 GiB
+Support for this filesystem wasn't enabled during compilation.
+
+interface_write()
+ 1 P EFI System                  2048     411647     409600 [EFI System Partition] [NO NAME]
+       0 0000 0000 00 00 00 00 00 00 00 00
+gpt_change_part_type
+       0 0000 0000 00 00 00 00 00 00 00 00
+Change partition type:
+     MBR                            1 1953525167 1953525167
+Change partition type:
+     NTFS                           1 1953525167 1953525167
+Invalid partition structure.
+New options :
+ Dump : Yes
+ Align partition: Yes
+ Expert mode : No
+
+Analyse Disk /dev/disk4 - 1000 GB / 931 GiB - 1953525168 sectors
+hdr_size=92
+hdr_lba_self=1
+hdr_lba_alt=1953525167 (expected 1953525167)
+hdr_lba_start=34
+hdr_lba_end=1953525134
+hdr_lba_table=2
+hdr_entries=128
+hdr_entsz=128
+check_part_gpt failed for partition
+ 2 P MS Reserved               411648     444415      32768 [Microsoft reserved partition]
+Current partition structure:
+ 1 P EFI System                  2048     411647     409600 [Basic data partition]
+No FAT, NTFS, ext2, JFS, Reiser, cramfs or XFS marker
+ 2 P MS Reserved               411648     444415      32768 [Microsoft reserved partition]
+ 2 P MS Reserved               411648     444415      32768 [Microsoft reserved partition]
+Warning: number of heads/cylinder mismatches 255 (NTFS) != 1 (HD)
+Warning: number of sectors per track mismatches 63 (NTFS) != 1 (HD)
+ 3 P MS Data                   444416 1951612927 1951168512 [Basic data partition]
+ 4 P Windows Recovery Env  1951612928 1953519615    1906688
+
+search_part()
+Disk /dev/disk4 - 1000 GB / 931 GiB - 1953525168 sectors
+test_FAT
+       0 0000 0000 00 00 00 00 00 00 00 00
+     Unknown                     2048       2047          0
+0000 ffffffeb58ffffff904d 53444f53 352e3000 0204ffffffde19   .X.MSDOS5.0.....
+0010 02000000 00fffffff80000 3f00ffffffff00 00080000   ........?.......
+0020 00400600 11030000 00000000 02000000   .@..............
+0030 01000600 00000000 00000000 00000000   ................
+0040 ffffff8000294b ffffffa11f164e 4f204e41 4d452020   ..)K...NO NAME  
+0050 20204641 54333220 202033ffffffc9 ffffff8effffffd1ffffffbcfffffff4     FAT32   3.....
+0060 7bffffff8effffffc1ffffff8e ffffffd9ffffffbd007c ffffff885640ffffff88 4e02ffffff8a56   {......|.V@.N..V
+0070 40ffffffb441ffffffbb ffffffaa55ffffffcd13 7210ffffff81fffffffb 55ffffffaa750a   @.A..U..r...U.u.
+0080 fffffff6ffffffc10174 05fffffffe4602 ffffffeb2dffffff8a56 40ffffffb408ffffffcd   ...t..F..-.V@...
+0090 137305ffffffb9 ffffffffffffffffffffff8afffffff1 660fffffffb6ffffffc6 40660fffffffb6   .s......f...@f..
+00A0 ffffffd1ffffff80ffffffe23f fffffff7ffffffe2ffffff86ffffffcd ffffffc0ffffffed0641 660fffffffb7ffffffc9   ...?.......Af...
+00B0 66fffffff7ffffffe166 ffffff8946fffffff8ffffff83 7e160075 39ffffff837e2a   f..f.F..~..u9.~*
+00C0 00773366 ffffff8b461c66 ffffff83ffffffc00cffffffbb 00ffffff80ffffffb901   .w3f.F.f........
+00D0 00ffffffe82c00 ffffffe9ffffffa803ffffffa1 fffffff87dffffff80ffffffc4 7cffffff8bfffffff0ffffffac   ..,......}..|...
+00E0 ffffff84ffffffc07417 3cffffffff7409 ffffffb40effffffbb07 00ffffffcd10ffffffeb   ..t.<.t.........
+00F0 ffffffeeffffffa1fffffffa7d ffffffebffffffe4ffffffa17d ffffff80ffffffebffffffdfffffff98 ffffffcd16ffffffcd19   ...}...}........
+0100 6660ffffff807e 02000fffffff84 2000666a 00665006   f`.~.... .fj.fP.
+0110 53666810 000100ffffffb4 42ffffff8a5640 ffffff8bfffffff4ffffffcd13   Sfh.....B.V@....
+0120 66586658 66586658 ffffffeb33663b 46fffffff87203   fXfXfXfX.3f;F.r.
+0130 fffffff9ffffffeb2a66 33ffffffd2660f ffffffb74e1866 fffffff7fffffff1fffffffeffffffc2   ..*f3.f..N.f....
+0140 ffffff8affffffca66ffffff8b ffffffd066ffffffc1ffffffea 10fffffff7761a ffffff86ffffffd6ffffff8a56   ..f..f....v....V
+0150 40ffffff8affffffe8ffffffc0 ffffffe4060affffffcc ffffffb80102ffffffcd 1366610f   @............fa.
+0160 ffffff8274ffffffffffffff81 ffffffc3000266 404975ffffff94 ffffffc3424f4f   .t.....f@Iu..BOO
+0170 544d4752 20202020 00000000 00000000   TMGR    ........
+0180 00000000 00000000 00000000 00000000   ................
+0190 00000000 00000000 00000000 00000000   ................
+01A0 00000000 00000000 00000000 0d0a4469   ..............Di
+01B0 736b2065 72726f72 ffffffff0d0a50 72657373   sk error...Press
+01C0 20616e79 206b6579 20746f20 72657374    any key to rest
+01D0 6172740d 0a000000 00000000 00000000   art.............
+01E0 00000000 00000000 00000000 00000000   ................
+01F0 00000000 00000000 ffffffac01ffffffb901 000055ffffffaa   ..............U.
+FAT32 at 2048/0/1
+FAT1 : 6622-7406
+FAT2 : 7407-8191
+start_rootdir : 8192 root cluster : 2
+Data : 8192-409599
+sectors : 409600
+cluster_size : 4
+no_of_cluster : 100352 (2 - 100353)
+fat_length 785 calculated 785
+heads/cylinder 255 (FAT) != 1 (HD)
+sect/track 63 (FAT) != 1 (HD)
+set_FAT_info: name from BS used
+
+FAT32 at 2048/0/1
+FAT: cluster=2(0x2), pos=10240
+     EFI System                  2048     411647     409600 [EFI System Partition] [NO NAME]
+     FAT32, blocksize=2048, 209 MB / 200 MiB
+NTFS at 444416/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1951168512
+sectors_per_cluster       8
+mft_lcn                   786432
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+NTFS part_offset=227540992, part_size=998998278144, sector_size=512
+NTFS partition cannot be added (part_offset<part_size).
+NTFS at 444416/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1951168512
+sectors_per_cluster       8
+mft_lcn                   786432
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data                   444416 1951612927 1951168512
+     NTFS, blocksize=4096, 998 GB / 930 GiB
+NTFS at 1951612928/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1906688
+sectors_per_cluster       8
+mft_lcn                   79445
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data               1949706241 1951612928    1906688
+     NTFS found using backup sector, blocksize=4096, 976 MB / 931 MiB
+NTFS at 1951612928/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1906688
+sectors_per_cluster       8
+mft_lcn                   79445
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data               1951612928 1953519615    1906688
+     NTFS, blocksize=4096, 976 MB / 931 MiB
+NTFS at 1953521663/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1505280
+sectors_per_cluster       8
+mft_lcn                   62720
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data               1952016384 1953521663    1505280
+     NTFS found using backup sector, blocksize=4096, 770 MB / 735 MiB
+NTFS at 1953521663/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1505280
+sectors_per_cluster       8
+mft_lcn                   62720
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+NTFS: Can't read MFT
+     MS Data               1953521663 1955026942    1505280
+     NTFS, blocksize=4096, 770 MB / 735 MiB
+This partition ends after the disk limits. (start=1953521663, size=1505280, end=1955026942, disk end=1953525168)
+NTFS at 1953523711/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1953079296
+sectors_per_cluster       8
+mft_lcn                   786432
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data                   444416 1953523711 1953079296
+     NTFS found using backup sector, blocksize=4096, 999 GB / 931 GiB
+NTFS at 1953523711/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1953079296
+sectors_per_cluster       8
+mft_lcn                   786432
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+NTFS: Can't read MFT
+     MS Data               1953523711 3906603006 1953079296
+     NTFS, blocksize=4096, 999 GB / 931 GiB
+This partition ends after the disk limits. (start=1953523711, size=1953079296, end=3906603006, disk end=1953525168)
+Disk /dev/disk4 - 1000 GB / 931 GiB - 1953525168 sectors
+Check the hard disk size: HD jumper settings, BIOS detection...
+The hard disk (1000 GB / 931 GiB) seems too small! (< 2000 GB / 1862 GiB)
+The following partitions can't be recovered:
+     MS Data               1953521663 1955026942    1505280
+     NTFS, blocksize=4096, 770 MB / 735 MiB
+     MS Data               1953523711 3906603006 1953079296
+     NTFS, blocksize=4096, 999 GB / 931 GiB
+
+Results
+   P EFI System                  2048     411647     409600 [EFI System Partition] [NO NAME]
+     FAT32, blocksize=2048, 209 MB / 200 MiB
+     MS Data                   444416 1951612927 1951168512
+     NTFS, blocksize=4096, 998 GB / 930 GiB
+     MS Data                   444416 1953523711 1953079296
+     NTFS found using backup sector, blocksize=4096, 999 GB / 931 GiB
+     MS Data               1949706241 1951612928    1906688
+     NTFS found using backup sector, blocksize=4096, 976 MB / 931 MiB
+     MS Data               1951612928 1953519615    1906688
+     NTFS, blocksize=4096, 976 MB / 931 MiB
+     MS Data               1952016384 1953521663    1505280
+     NTFS found using backup sector, blocksize=4096, 770 MB / 735 MiB
+
+     MS Data               1952016384 1953521663    1505280
+     NTFS found using backup sector, blocksize=4096, 770 MB / 735 MiB
+Support for this filesystem wasn't enabled during compilation.
+
+     MS Data               1951612928 1953519615    1906688
+     NTFS, blocksize=4096, 976 MB / 931 MiB
+Support for this filesystem wasn't enabled during compilation.
+
+     MS Data               1949706241 1951612928    1906688
+     NTFS found using backup sector, blocksize=4096, 976 MB / 931 MiB
+Support for this filesystem wasn't enabled during compilation.
+
+interface_write()
+ 1 P EFI System                  2048     411647     409600 [EFI System Partition] [NO NAME]
+simulate write!
+
+Analyse Disk /dev/disk4 - 1000 GB / 931 GiB - 1953525168 sectors
+hdr_size=92
+hdr_lba_self=1
+hdr_lba_alt=1953525167 (expected 1953525167)
+hdr_lba_start=34
+hdr_lba_end=1953525134
+hdr_lba_table=2
+hdr_entries=128
+hdr_entsz=128
+check_part_gpt failed for partition
+ 2 P MS Reserved               411648     444415      32768 [Microsoft reserved partition]
+Current partition structure:
+ 1 P EFI System                  2048     411647     409600 [Basic data partition]
+No FAT, NTFS, ext2, JFS, Reiser, cramfs or XFS marker
+ 2 P MS Reserved               411648     444415      32768 [Microsoft reserved partition]
+ 2 P MS Reserved               411648     444415      32768 [Microsoft reserved partition]
+Warning: number of heads/cylinder mismatches 255 (NTFS) != 1 (HD)
+Warning: number of sectors per track mismatches 63 (NTFS) != 1 (HD)
+ 3 P MS Data                   444416 1951612927 1951168512 [Basic data partition]
+ 4 P Windows Recovery Env  1951612928 1953519615    1906688
+
+search_part()
+Disk /dev/disk4 - 1000 GB / 931 GiB - 1953525168 sectors
+test_FAT
+       0 0000 0000 00 00 00 00 00 00 00 00
+     Unknown                     2048       2047          0
+0000 ffffffeb58ffffff904d 53444f53 352e3000 0204ffffffde19   .X.MSDOS5.0.....
+0010 02000000 00fffffff80000 3f00ffffffff00 00080000   ........?.......
+0020 00400600 11030000 00000000 02000000   .@..............
+0030 01000600 00000000 00000000 00000000   ................
+0040 ffffff8000294b ffffffa11f164e 4f204e41 4d452020   ..)K...NO NAME  
+0050 20204641 54333220 202033ffffffc9 ffffff8effffffd1ffffffbcfffffff4     FAT32   3.....
+0060 7bffffff8effffffc1ffffff8e ffffffd9ffffffbd007c ffffff885640ffffff88 4e02ffffff8a56   {......|.V@.N..V
+0070 40ffffffb441ffffffbb ffffffaa55ffffffcd13 7210ffffff81fffffffb 55ffffffaa750a   @.A..U..r...U.u.
+0080 fffffff6ffffffc10174 05fffffffe4602 ffffffeb2dffffff8a56 40ffffffb408ffffffcd   ...t..F..-.V@...
+0090 137305ffffffb9 ffffffffffffffffffffff8afffffff1 660fffffffb6ffffffc6 40660fffffffb6   .s......f...@f..
+00A0 ffffffd1ffffff80ffffffe23f fffffff7ffffffe2ffffff86ffffffcd ffffffc0ffffffed0641 660fffffffb7ffffffc9   ...?.......Af...
+00B0 66fffffff7ffffffe166 ffffff8946fffffff8ffffff83 7e160075 39ffffff837e2a   f..f.F..~..u9.~*
+00C0 00773366 ffffff8b461c66 ffffff83ffffffc00cffffffbb 00ffffff80ffffffb901   .w3f.F.f........
+00D0 00ffffffe82c00 ffffffe9ffffffa803ffffffa1 fffffff87dffffff80ffffffc4 7cffffff8bfffffff0ffffffac   ..,......}..|...
+00E0 ffffff84ffffffc07417 3cffffffff7409 ffffffb40effffffbb07 00ffffffcd10ffffffeb   ..t.<.t.........
+00F0 ffffffeeffffffa1fffffffa7d ffffffebffffffe4ffffffa17d ffffff80ffffffebffffffdfffffff98 ffffffcd16ffffffcd19   ...}...}........
+0100 6660ffffff807e 02000fffffff84 2000666a 00665006   f`.~.... .fj.fP.
+0110 53666810 000100ffffffb4 42ffffff8a5640 ffffff8bfffffff4ffffffcd13   Sfh.....B.V@....
+0120 66586658 66586658 ffffffeb33663b 46fffffff87203   fXfXfXfX.3f;F.r.
+0130 fffffff9ffffffeb2a66 33ffffffd2660f ffffffb74e1866 fffffff7fffffff1fffffffeffffffc2   ..*f3.f..N.f....
+0140 ffffff8affffffca66ffffff8b ffffffd066ffffffc1ffffffea 10fffffff7761a ffffff86ffffffd6ffffff8a56   ..f..f....v....V
+0150 40ffffff8affffffe8ffffffc0 ffffffe4060affffffcc ffffffb80102ffffffcd 1366610f   @............fa.
+0160 ffffff8274ffffffffffffff81 ffffffc3000266 404975ffffff94 ffffffc3424f4f   .t.....f@Iu..BOO
+0170 544d4752 20202020 00000000 00000000   TMGR    ........
+0180 00000000 00000000 00000000 00000000   ................
+0190 00000000 00000000 00000000 00000000   ................
+01A0 00000000 00000000 00000000 0d0a4469   ..............Di
+01B0 736b2065 72726f72 ffffffff0d0a50 72657373   sk error...Press
+01C0 20616e79 206b6579 20746f20 72657374    any key to rest
+01D0 6172740d 0a000000 00000000 00000000   art.............
+01E0 00000000 00000000 00000000 00000000   ................
+01F0 00000000 00000000 ffffffac01ffffffb901 000055ffffffaa   ..............U.
+FAT32 at 2048/0/1
+FAT1 : 6622-7406
+FAT2 : 7407-8191
+start_rootdir : 8192 root cluster : 2
+Data : 8192-409599
+sectors : 409600
+cluster_size : 4
+no_of_cluster : 100352 (2 - 100353)
+fat_length 785 calculated 785
+heads/cylinder 255 (FAT) != 1 (HD)
+sect/track 63 (FAT) != 1 (HD)
+set_FAT_info: name from BS used
+
+FAT32 at 2048/0/1
+FAT: cluster=2(0x2), pos=10240
+     EFI System                  2048     411647     409600 [EFI System Partition] [NO NAME]
+     FAT32, blocksize=2048, 209 MB / 200 MiB
+NTFS at 444416/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1951168512
+sectors_per_cluster       8
+mft_lcn                   786432
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+NTFS part_offset=227540992, part_size=998998278144, sector_size=512
+NTFS partition cannot be added (part_offset<part_size).
+NTFS at 444416/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1951168512
+sectors_per_cluster       8
+mft_lcn                   786432
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data                   444416 1951612927 1951168512
+     NTFS, blocksize=4096, 998 GB / 930 GiB
+NTFS at 1951612928/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1906688
+sectors_per_cluster       8
+mft_lcn                   79445
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data               1949706241 1951612928    1906688
+     NTFS found using backup sector, blocksize=4096, 976 MB / 931 MiB
+NTFS at 1951612928/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1906688
+sectors_per_cluster       8
+mft_lcn                   79445
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data               1951612928 1953519615    1906688
+     NTFS, blocksize=4096, 976 MB / 931 MiB
+NTFS at 1953521663/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1505280
+sectors_per_cluster       8
+mft_lcn                   62720
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data               1952016384 1953521663    1505280
+     NTFS found using backup sector, blocksize=4096, 770 MB / 735 MiB
+NTFS at 1953521663/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1505280
+sectors_per_cluster       8
+mft_lcn                   62720
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+NTFS: Can't read MFT
+     MS Data               1953521663 1955026942    1505280
+     NTFS, blocksize=4096, 770 MB / 735 MiB
+This partition ends after the disk limits. (start=1953521663, size=1505280, end=1955026942, disk end=1953525168)
+NTFS at 1953523711/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1953079296
+sectors_per_cluster       8
+mft_lcn                   786432
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+     MS Data                   444416 1953523711 1953079296
+     NTFS found using backup sector, blocksize=4096, 999 GB / 931 GiB
+NTFS at 1953523711/0/1
+heads/cylinder 255 (NTFS) != 1 (HD)
+sect/track 63 (NTFS) != 1 (HD)
+filesystem size           1953079296
+sectors_per_cluster       8
+mft_lcn                   786432
+mftmirr_lcn               2
+clusters_per_mft_record   -10
+clusters_per_index_record 1
+NTFS: Can't read MFT
+     MS Data               1953523711 3906603006 1953079296
+     NTFS, blocksize=4096, 999 GB / 931 GiB
+This partition ends after the disk limits. (start=1953523711, size=1953079296, end=3906603006, disk end=1953525168)
+Disk /dev/disk4 - 1000 GB / 931 GiB - 1953525168 sectors
+Check the hard disk size: HD jumper settings, BIOS detection...
+The hard disk (1000 GB / 931 GiB) seems too small! (< 2000 GB / 1862 GiB)
+The following partitions can't be recovered:
+     MS Data               1953521663 1955026942    1505280
+     NTFS, blocksize=4096, 770 MB / 735 MiB
+     MS Data               1953523711 3906603006 1953079296
+     NTFS, blocksize=4096, 999 GB / 931 GiB
+
+Results
+   P EFI System                  2048     411647     409600 [EFI System Partition] [NO NAME]
+     FAT32, blocksize=2048, 209 MB / 200 MiB
+     MS Data                   444416 1951612927 1951168512
+     NTFS, blocksize=4096, 998 GB / 930 GiB
+     MS Data                   444416 1953523711 1953079296
+     NTFS found using backup sector, blocksize=4096, 999 GB / 931 GiB
+     MS Data               1949706241 1951612928    1906688
+     NTFS found using backup sector, blocksize=4096, 976 MB / 931 MiB
+     MS Data               1951612928 1953519615    1906688
+     NTFS, blocksize=4096, 976 MB / 931 MiB
+     MS Data               1952016384 1953521663    1505280
+     NTFS found using backup sector, blocksize=4096, 770 MB / 735 MiB
+
+interface_write()
+ 1 P EFI System                  2048     411647     409600 [EFI System Partition] [NO NAME]
+write!
+No extended partition
+You will have to reboot for the change to take effect.
+SIGHUP detected! PhotoRec has been killed.
+SIGHUP detected! PhotoRec has been killed.

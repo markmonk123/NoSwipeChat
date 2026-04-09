@@ -8,6 +8,7 @@ import LoginScreen from './screens/LoginScreen';
 import ChatScreen from './screens/ChatScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import NearbyUsersScreen from './screens/NearbyUsersScreen';
+import WelcomeScreen from './screens/WelcomeScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -39,25 +40,21 @@ const ChatTabNavigator = () => {
 };
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-
   return (
     <NavigationContainer>
-      <Stack.Navigator>
-        {!isLoggedIn ? (
-          <Stack.Screen
-            name="Login"
-            component={LoginScreen}
-            options={{ headerShown: false }}
-            initialParams={{ setIsLoggedIn }}
-          />
-        ) : (
-          <Stack.Screen
-            name="MainApp"
-            component={ChatTabNavigator}
-            options={{ headerShown: false }}
-          />
-        )}
+      <Stack.Navigator initialRouteName="Welcome" screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="Welcome"
+          component={WelcomeScreen}
+        />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+        />
+        <Stack.Screen
+          name="MainApp"
+          component={ChatTabNavigator}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

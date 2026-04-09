@@ -36,6 +36,34 @@ const parseDate = (value) => {
   return parsed;
 };
 
+const SOCIAL_DATA_FIELDS = [
+  'friendsList',
+  'timelinePosts',
+  'privateMessages',
+  'extendedSocialGraph'
+];
+
+const toStringArray = (value) =>
+  Array.isArray(value)
+    ? value.map((item) => String(item).trim()).filter(Boolean)
+    : [];
+
+const buildConsentUpdate = (value, defaults = {}) => {
+  const status = typeof value?.status === 'boolean' ? value.status : Boolean(defaults?.status);
+  const available = typeof value?.available === 'boolean'
+    ? value.available
+    : (typeof defaults?.available === 'boolean' ? defaults.available : true);
+
+  return {
+    status,
+    available,
+    requestedAt: status ? new Date() : undefined,
+    grantedAt: status && available ? new Date() : undefined,
+    revokedAt: status ? undefined : new Date(),
+    note: typeof value?.note === 'string' ? value.note : defaults?.note
+  };
+};
+
 // Get current user profile
 router.get('/profile', authMiddleware, asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.userId);
@@ -209,6 +237,65 @@ router.put('/personality', authMiddleware, asyncHandler(async (req, res) => {
 
   res.json({
     personalityProfile: updated.personalityProfile
+  });
+}));
+
+router.put('/social-data', authMiddleware, asyncHandler(async (req, res) => {
+  const facebook = req.body?.facebook || {};
+  const requestedScopes = toStringArray(facebook.requestedScopes);
+  const grantedScopes = toStringArray(facebook.grantedScopes);
+  const declinedScopes = toStringArray(facebook.declinedScopes);
+  const hasFriendsPermission = grantedScopes.includes('user_friends');
+  const hasTimelinePermission = grantedScopes.includes('user_posts');
+  const updates = {
+    'socialDataSettings.facebook.requestedScopes': requestedScopes,
+    'socialDataSettings.facebook.grantedScopes': grantedScopes,
+    'socialDataSettings.facebook.declinedScopes': declinedScopes,
+    'socialDataSettings.facebook.lastUpdatedAt': new Date()
+  };
+
+  SOCIAL_DATA_FIELDS.forEach((field) => {
+    if (!facebook[field]) {
+      return;
+    }
+
+    let defaults = {};
+    if (field === 'privateMessages') {
+      defaults = {
+        available: false,
+        note: 'Facebook Login does not provide direct access to private messages in this app flow.'
+      };
+    } else if (field === 'friendsList' || field === 'extendedSocialGraph') {
+      defaults = {
+        available: !facebook[field].status || hasFriendsPermission,
+        note: facebook[field].status && !hasFriendsPermission
+          ? 'Turned on, but Facebook friends access has not been granted for this account yet.'
+          : undefined
+      };
+    } else if (field === 'timelinePosts') {
+      defaults = {
+        available: !facebook[field].status || hasTimelinePermission,
+        note: facebook[field].status && !hasTimelinePermission
+          ? 'Turned on, but Facebook timeline-post access has not been granted for this account yet.'
+          : undefined
+      };
+    }
+
+    updates[`socialDataSettings.facebook.${field}`] = buildConsentUpdate(facebook[field], defaults);
+
+    if (!facebook[field].status && field !== 'privateMessages') {
+      updates[`socialData.facebook.${field}`] = undefined;
+    }
+  });
+
+  const updated = await User.findByIdAndUpdate(req.user.userId, updates, { new: true });
+  if (!updated) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  res.json({
+    socialDataSettings: updated.socialDataSettings,
+    socialData: updated.socialData
   });
 }));
 

@@ -1,0 +1,46 @@
+# NoSwipeChat JavaScript / Node requirements manifest
+# This is a repo dependency inventory for the frontend Expo app and backend Node service.
+# Python dependencies remain in requirements.txt.
+
+node=20
+
+[frontend.dependencies]
+@react-native-async-storage/async-storage=2.2.0
+@react-native-community/hooks=^3.0.0
+@react-navigation/bottom-tabs=^6.5.0
+@react-navigation/native=^6.1.0
+@react-navigation/stack=^6.3.0
+axios=^1.5.0
+expo=^54.0.25
+expo-facebook=^12.2.0
+expo-gl=~15.0.1
+expo-location=~19.0.7
+expo-three=^6.0.0
+react=19.1.0
+react-dom=19.1.0
+react-native=0.81.5
+react-native-gesture-handler=~2.28.0
+react-native-safe-area-context=~5.6.0
+react-native-screens=~4.16.0
+react-native-web=^0.21.0
+socket.io-client=^4.5.4
+three=0.127.0
+
+[frontend.devDependencies]
+@babel/core=^7.22.0
+
+[backend.dependencies]
+axios=^1.5.0
+bcryptjs=^2.4.3
+cors=^2.8.5
+dotenv=^16.3.1
+express=^4.18.2
+geolocation-utils=^1.2.6
+jsonwebtoken=^9.0.2
+mongoose=^7.5.0
+passport=^0.6.0
+passport-facebook=^3.0.0
+socket.io=^4.5.4
+
+[backend.devDependencies]
+nodemon=^3.0.1
