@@ -11,8 +11,12 @@ RUN npx expo export --platform web --output-dir dist
 
 FROM nginx:1.27-alpine
 
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+ARG BACKEND_UPSTREAM=backend:5000
+
+COPY frontend/nginx.conf /tmp/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
+
+RUN sed "s|__BACKEND_UPSTREAM__|${BACKEND_UPSTREAM}|g" /tmp/default.conf > /etc/nginx/conf.d/default.conf
 
 EXPOSE 8080
 
