@@ -238,6 +238,15 @@ io.on('connection', (socket) => {
         profilePicture: user.profilePicture,
         message: createdMessage.message,
         timestamp: createdMessage.createdAt || new Date().toISOString()
+      };
+
+      // Broadcast message to all users in the same city
+      io.emit('receive-message', messagePayload);
+
+    } catch (err) {
+      console.error('Error sending message', err);
+    }
+  });
 
   socket.on('disconnect', () => {
     if (socket.userId) {

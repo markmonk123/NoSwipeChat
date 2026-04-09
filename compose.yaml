@@ -15,7 +15,7 @@ services:
       FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
       FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
       EXPO_PUBLIC_FACEBOOK_APP_ID: ${EXPO_PUBLIC_FACEBOOK_APP_ID:-${FACEBOOK_APP_ID:-}}
-      FRONTEND_URLS: http://localhost:8080,http://127.0.0.1:8080
+      FRONTEND_URLS: http://localhost:8080,http://127.0.0.1:8080,${CODESPACE_PUBLIC_URL:-}
       SOCKET_IO_PATH: /socket.io
     ports:
       - "8080:8080"

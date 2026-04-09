@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Ima
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Facebook from 'expo-facebook';
 import axios from 'axios';
+import { buildApiUrl } from '../config/runtime';
 
 const LoginScreen = ({ route }) => {
   const [loading, setLoading] = useState(false);
@@ -28,7 +29,7 @@ const LoginScreen = ({ route }) => {
         const data = await response.json();
 
         // Send to backend
-        const backendResponse = await axios.post('http://localhost:5000/auth/facebook/callback', {
+        const backendResponse = await axios.post(buildApiUrl('/auth/facebook/callback'), {
           facebookId: data.id,
           name: data.name,
           email: data.email,

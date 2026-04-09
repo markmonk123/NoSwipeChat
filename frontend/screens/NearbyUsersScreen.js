@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import io from 'socket.io-client';
 import PersonalityOrb from '../components/PersonalityOrb';
+import { buildApiUrl, SOCKET_PATH, SOCKET_URL } from '../config/runtime';
 
 const NearbyUsersScreen = () => {
   const EMOJIS = [
@@ -61,7 +62,8 @@ const NearbyUsersScreen = () => {
       const uid = await AsyncStorage.getItem('userId');
       setCurrentUserId(uid || '');
 
-      activeSocket = io('http://localhost:5000', {
+      activeSocket = io(SOCKET_URL, {
+        path: SOCKET_PATH,
         auth: { token },
       });
 
@@ -122,7 +124,7 @@ const NearbyUsersScreen = () => {
       setLoading(true);
       const token = await AsyncStorage.getItem('authToken');
 
-      const response = await axios.get('http://localhost:5000/users/nearby', {
+      const response = await axios.get(buildApiUrl('/users/nearby'), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -214,7 +216,7 @@ const NearbyUsersScreen = () => {
     try {
       setIsSubmittingAction(true);
       const headers = await buildAuthHeaders();
-      await axios.post(`http://localhost:5000/users/block/${activeChatUser._id}`, {}, { headers });
+      await axios.post(buildApiUrl(`/users/block/${activeChatUser._id}`), {}, { headers });
       setActionAlert('User blocked. You will not receive messages from them.');
       setUsers((prev) => prev.filter((item) => item._id !== activeChatUser._id));
       if (personalityUser?._id === activeChatUser._id) {
@@ -240,7 +242,7 @@ const NearbyUsersScreen = () => {
       const headers = await buildAuthHeaders();
       if (blockToo) {
         await axios.post(
-          'http://localhost:5000/users/block-and-report',
+          buildApiUrl('/users/block-and-report'),
           {
             reportedUserId: activeChatUser._id,
             reason: reportReason,
@@ -252,7 +254,7 @@ const NearbyUsersScreen = () => {
         setDmVisible(false);
       } else {
         await axios.post(
-          'http://localhost:5000/users/report',
+          buildApiUrl('/users/report'),
           {
             reportedUserId: activeChatUser._id,
             reason: reportReason,

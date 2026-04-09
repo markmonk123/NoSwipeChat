@@ -35,7 +35,7 @@ services:
       FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
       FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
       EXPO_PUBLIC_FACEBOOK_APP_ID: ${EXPO_PUBLIC_FACEBOOK_APP_ID:-${FACEBOOK_APP_ID:-}}
-      FRONTEND_URLS: http://localhost:8080,http://127.0.0.1:8080
+      FRONTEND_URLS: http://localhost:8080,http://127.0.0.1:8080,${CODESPACE_PUBLIC_URL:-}
       SOCKET_IO_PATH: /socket.io
       # RoBERTa embeddings service endpoint (internal network)
       EMBEDDINGS_SERVICE_URL: http://embeddings:8000
@@ -75,11 +75,11 @@ services:
       - "8080:8080"
     volumes:
       - ./frontend/dist:/usr/share/nginx/html:ro
-      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
     networks:
       - noswipechat-network
     restart: unless-stopped
-    command: /bin/sh -c "sed -i 's|__BACKEND_UPSTREAM__|backend:5000|g' /etc/nginx/conf.d/default.conf && sed -i 's|__EMBEDDINGS_UPSTREAM__|embeddings:8000|g' /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+    command: nginx -g 'daemon off;'
 
 volumes:
   mongo-data:

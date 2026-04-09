@@ -13,6 +13,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import io from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SOCKET_PATH, SOCKET_URL } from '../config/runtime';
 
 const ChatScreen = () => {
   const [messages, setMessages] = useState([]);
@@ -32,7 +33,8 @@ const ChatScreen = () => {
         setCity(userCity || 'Unknown');
         setUserId(uid);
 
-        const newSocket = io('http://localhost:5000', {
+        const newSocket = io(SOCKET_URL, {
+          path: SOCKET_PATH,
           auth: { token },
         });
 
