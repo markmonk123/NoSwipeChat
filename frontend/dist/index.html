@@ -12,14 +12,14 @@
       body {
         height: 100%;
       }
-      /* These styles disable body scrolling if you are using <ScrollView> */
+      /* Let long legal and onboarding pages scroll on web. */
       body {
-        overflow: hidden;
+        overflow-y: auto;
       }
       /* These styles make the root element full-height */
       #root {
         display: flex;
-        height: 100%;
+        min-height: 100%;
         flex: 1;
       }
     </style>
