@@ -1,16 +1,43 @@
-version: '3.8'
+# ─── Network Design ───────────────────────────────────────────────────────────
+#
+#  noswipechat-external  (bridge, internet access)
+#    └── nginx only – accepts inbound traffic from the host/internet
+#
+#  noswipechat-internal  (bridge, internal: true → NO internet access)
+#    └── backend, embeddings, mongo – completely isolated from the internet
+#        at runtime; nginx bridges both networks to route traffic inward.
+#
+#  Internet access during build:
+#    Docker image builds always have internet access regardless of runtime
+#    network settings (npm install, pip install run during `docker build`).
+#    Once built, containers on noswipechat-internal cannot reach the internet.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+networks:
+  # External-facing network: nginx sits here to accept inbound requests.
+  # Has a default gateway so nginx can reach the internet if needed (e.g. OAuth).
+  noswipechat-external:
+    driver: bridge
+
+  # Internal-only network: no default gateway, no internet access at runtime.
+  # All inter-service communication happens here.
+  noswipechat-internal:
+    driver: bridge
+    internal: true   # <── key flag: Docker removes the default route
 
 services:
+
+  # ── MongoDB ──────────────────────────────────────────────────────────────────
   mongo:
     image: mongo:7
     container_name: noswipechat-mongo
-    ports:
-      - "27017:27017"
+    # No host port binding – only reachable from the internal network
     restart: unless-stopped
     volumes:
       - mongo-data:/data/db
     networks:
-      - noswipechat-network
+      - noswipechat-internal
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
@@ -18,11 +45,14 @@ services:
       retries: 10
       start_period: 10s
 
+  # ── Node.js backend ───────────────────────────────────────────────────────────
   backend:
     image: noswipechat-backend
     build:
       context: .
       dockerfile: ./backend/Dockerfile
+      # `npm install --omit=dev` runs at build time when Docker has internet
+      # access; the compiled image is then placed on the internal-only network.
     container_name: noswipechat-backend
     depends_on:
       mongo:
@@ -37,25 +67,29 @@ services:
       EXPO_PUBLIC_FACEBOOK_APP_ID: ${EXPO_PUBLIC_FACEBOOK_APP_ID:-${FACEBOOK_APP_ID:-}}
       FRONTEND_URLS: http://localhost:8080,http://127.0.0.1:8080,${CODESPACE_PUBLIC_URL:-}
       SOCKET_IO_PATH: /socket.io
-      # RoBERTa embeddings service endpoint (internal network)
       EMBEDDINGS_SERVICE_URL: http://embeddings:8000
     restart: unless-stopped
+    # Internal network only – not reachable directly from the internet
     networks:
-      - noswipechat-network
+      - noswipechat-internal
     expose:
       - "5000"
 
+  # ── Python / RoBERTa embeddings service ──────────────────────────────────────
   embeddings:
     image: noswipechat-embeddings
     build:
       context: .
       dockerfile: ./Dockerfile
+      # pip install runs at build time (internet access available);
+      # the runtime container is on the internal-only network.
     container_name: noswipechat-embeddings
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
+    # Internal network only – not reachable from the internet
     networks:
-      - noswipechat-network
+      - noswipechat-internal
     expose:
       - "8000"
     healthcheck:
@@ -65,25 +99,33 @@ services:
       start_period: 40s
       retries: 3
 
+  # ── nginx reverse proxy ───────────────────────────────────────────────────────
+  # nginx is the ONLY container on both networks:
+  #   • noswipechat-external → accepts traffic from the host / internet
+  #   • noswipechat-internal → can reach backend, embeddings, mongo
   nginx:
-    image: nginx:alpine
+    image: noswipechat-nginx
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+      # Stage 1 of the Dockerfile runs `npm ci` (internet access at build time)
+      # to compile the React frontend. Stage 2 is a clean nginx image.
     container_name: noswipechat-nginx
     depends_on:
       - backend
       - embeddings
     ports:
-      - "8080:8080"
-    volumes:
-      - ./frontend/dist:/usr/share/nginx/html:ro
-      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+      - "8080:8080"   # Only externally exposed port in the entire stack
     networks:
-      - noswipechat-network
+      - noswipechat-external   # Accept external traffic
+      - noswipechat-internal   # Proxy to internal services
     restart: unless-stopped
-    command: nginx -g 'daemon off;'
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
 
 volumes:
   mongo-data:
-
-networks:
-  noswipechat-network:
-    driver: bridge
