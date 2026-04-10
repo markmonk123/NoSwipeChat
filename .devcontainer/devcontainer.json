@@ -1,11 +1,62 @@
 {
 	"image": "mcr.microsoft.com/devcontainers/universal:2",
 	"features": {
+		// Docker-in-Docker: allows running `docker compose` inside the Codespace.
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {
+			"moby": true,
+			"dockerDashComposeVersion": "v2"
+		},
 		"ghcr.io/cirolosapio/devcontainers-features/alpine-node:0": {
 			"corepack": true,
 			"pnpmVersion": "latest"
 		},
 		"ghcr.io/cirolosapio/devcontainers-features/alpine-php-posix:0": {},
 		"ghcr.io/cirolosapio/devcontainers-features/alpine-php-redis:0": {}
-	}
+	},
+
+	// ── Port forwarding ────────────────────────────────────────────────────────
+	// Expose only port 8080 (the single nginx ingress).  Backend (5000),
+	// embeddings (8000), and mongo (27017) are internal-only and must NOT be
+	// forwarded.
+	"forwardPorts": [8080],
+	"portsAttributes": {
+		"8080": {
+			"label": "NoSwipeChat (nginx)",
+			"onAutoForward": "openBrowserOnce",
+			"visibility": "private"
+		}
+	},
+
+	// ── Codespace secrets → environment variables ──────────────────────────────
+	// Store the following in GitHub → Settings → Codespaces → Secrets and
+	// select this repository so they are injected automatically when a Codespace
+	// starts.  These map 1-to-1 with the variables expected by docker-compose.yml.
+	//
+	//   JWT_SECRET              – strong random string for JWT signing
+	//   FACEBOOK_APP_ID         – Facebook OAuth app id
+	//   FACEBOOK_APP_SECRET     – Facebook OAuth app secret
+	//   GOOGLE_CLIENT_ID        – Google OAuth client id
+	//   GOOGLE_CLIENT_SECRET    – Google OAuth client secret
+	//   LINKEDIN_CLIENT_ID      – LinkedIn OAuth client id
+	//   LINKEDIN_CLIENT_SECRET  – LinkedIn OAuth client secret
+	//
+	// The remoteEnv block makes them available as shell variables so the
+	// postCreateCommand can write them into the .env file.
+	"remoteEnv": {
+		"JWT_SECRET":              "${localEnv:JWT_SECRET}",
+		"FACEBOOK_APP_ID":         "${localEnv:FACEBOOK_APP_ID}",
+		"FACEBOOK_APP_SECRET":     "${localEnv:FACEBOOK_APP_SECRET}",
+		"EXPO_PUBLIC_FACEBOOK_APP_ID": "${localEnv:FACEBOOK_APP_ID}",
+		"GOOGLE_CLIENT_ID":        "${localEnv:GOOGLE_CLIENT_ID}",
+		"GOOGLE_CLIENT_SECRET":    "${localEnv:GOOGLE_CLIENT_SECRET}",
+		"LINKEDIN_CLIENT_ID":      "${localEnv:LINKEDIN_CLIENT_ID}",
+		"LINKEDIN_CLIENT_SECRET":  "${localEnv:LINKEDIN_CLIENT_SECRET}"
+	},
+
+	// ── Post-create setup ──────────────────────────────────────────────────────
+	// Runs once after the Codespace container is created.
+	// 1. Generates a .env file from Codespace secrets (falls back to placeholders
+	//    so the stack can start even without secrets configured yet).
+	// 2. Starts the full docker compose stack so the app is ready immediately.
+	"postCreateCommand": "bash .devcontainer/setup.sh"
 }

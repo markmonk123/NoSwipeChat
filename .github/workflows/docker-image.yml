@@ -8,11 +8,105 @@ on:
 
 jobs:
 
-  build:
+  build-and-test:
 
     runs-on: ubuntu-latest
 
+    env:
+      # Secrets are injected from GitHub Actions secrets (Settings → Secrets and variables → Actions).
+      # Create these secrets in the repository before running this workflow:
+      #   JWT_SECRET, FACEBOOK_APP_ID, FACEBOOK_APP_SECRET,
+      #   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
+      #   LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET
+      JWT_SECRET:              ${{ secrets.JWT_SECRET }}
+      FACEBOOK_APP_ID:         ${{ secrets.FACEBOOK_APP_ID }}
+      FACEBOOK_APP_SECRET:     ${{ secrets.FACEBOOK_APP_SECRET }}
+      EXPO_PUBLIC_FACEBOOK_APP_ID: ${{ secrets.FACEBOOK_APP_ID }}
+      GOOGLE_CLIENT_ID:        ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET:    ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      LINKEDIN_CLIENT_ID:      ${{ secrets.LINKEDIN_CLIENT_ID }}
+      LINKEDIN_CLIENT_SECRET:  ${{ secrets.LINKEDIN_CLIENT_SECRET }}
+
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag workflow:$(date +%s)
+      - uses: actions/checkout@v4
+
+      # ── 1. Build & start the full compose stack ──────────────────────────────
+      - name: Build Docker images
+        run: docker compose -f docker-compose.yml build
+
+      - name: Start services
+        run: docker compose -f docker-compose.yml up -d
+
+      # ── 2. Wait for nginx to become healthy ──────────────────────────────────
+      - name: Wait for nginx health check
+        run: |
+          # Poll up to 30 times × 5 s = 150 s maximum wait.
+          # nginx healthcheck start_period is 10 s; embeddings model load can take ~40 s.
+          echo "Waiting for nginx to be healthy..."
+          for i in $(seq 1 30); do
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' noswipechat-nginx 2>/dev/null || echo "unknown")
+            echo "  attempt $i: nginx health = $STATUS"
+            if [ "$STATUS" = "healthy" ]; then
+              echo "nginx is healthy"
+              break
+            fi
+            sleep 5
+          done
+          FINAL=$(docker inspect --format='{{.State.Health.Status}}' noswipechat-nginx 2>/dev/null || echo "unknown")
+          if [ "$FINAL" != "healthy" ]; then
+            echo "nginx did not become healthy in time"
+            docker compose -f docker-compose.yml logs nginx
+            exit 1
+          fi
+
+      # ── 3. Networking smoke tests ────────────────────────────────────────────
+      - name: Smoke test – frontend (/)
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/)
+          echo "GET / → $HTTP_CODE"
+          [ "$HTTP_CODE" = "200" ] || { echo "Expected 200, got $HTTP_CODE"; exit 1; }
+
+      - name: Smoke test – API health (/api/health)
+        run: |
+          BODY=$(curl -s http://localhost:8080/api/health)
+          echo "GET /api/health → $BODY"
+          echo "$BODY" | grep -q "running" || { echo "Health check body unexpected: $BODY"; exit 1; }
+
+      - name: Smoke test – API status (/api/status)
+        run: |
+          BODY=$(curl -s http://localhost:8080/api/status)
+          echo "GET /api/status → $BODY"
+          echo "$BODY" | grep -q "backend" || { echo "Status check body unexpected: $BODY"; exit 1; }
+
+      - name: Smoke test – Socket.io path (/socket.io/)
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/socket.io/?EIO=4&transport=polling")
+          echo "GET /socket.io/ → $HTTP_CODE"
+          # Socket.io polling returns 200 or 400 (missing sid on first request is normal)
+          { [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "400" ]; } || \
+            { echo "Unexpected socket.io HTTP code: $HTTP_CODE"; exit 1; }
+
+      # ── 4. Verify internal services are NOT host-exposed ─────────────────────
+      - name: Verify backend port 5000 is not host-exposed
+        run: |
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 http://localhost:5000/health 2>/dev/null || echo "000")
+          echo "Direct backend:5000 → $CODE"
+          [ "$CODE" = "000" ] || { echo "FAIL: backend port 5000 is unexpectedly reachable from host"; exit 1; }
+
+      - name: Verify embeddings port 8000 is not host-exposed
+        run: |
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 http://localhost:8000/health 2>/dev/null || echo "000")
+          echo "Direct embeddings:8000 → $CODE"
+          [ "$CODE" = "000" ] || { echo "FAIL: embeddings port 8000 is unexpectedly reachable from host"; exit 1; }
+
+      # ── 5. Show container state & logs on failure ────────────────────────────
+      - name: Show compose ps and logs on failure
+        if: failure()
+        run: |
+          docker compose -f docker-compose.yml ps
+          docker compose -f docker-compose.yml logs --tail=100
+
+      # ── 6. Tear down ─────────────────────────────────────────────────────────
+      - name: Tear down services
+        if: always()
+        run: docker compose -f docker-compose.yml down --volumes
