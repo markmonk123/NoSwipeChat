@@ -1,12 +1,12 @@
 import React from 'react';
 import {
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
+import AppScrollView from '../components/AppScrollView';
 
 const HOW_IT_WORKS = [
   'Sign in with Facebook so NoSwipeChat starts from a real identity layer instead of anonymous swiping.',
@@ -50,7 +50,7 @@ const DISCLAIMER_POINTS = [
 const WelcomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
+      <AppScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -125,7 +125,7 @@ const WelcomeScreen = ({ navigation }) => {
         <Text style={styles.footerNote}>
           Continuing takes you to sign-in so you can start using NoSwipeChat.
         </Text>
-      </ScrollView>
+      </AppScrollView>
     </SafeAreaView>
   );
 };

@@ -3,6 +3,14 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const ProfileVerification = require('../models/ProfileVerification');
 const { asyncHandler } = require('../middleware/errorHandler');
+const {
+  createHttpError,
+  requestVerificationCode,
+  ensurePhoneVerificationRiskChecks,
+  buildPhoneVerificationToken,
+  toUserPhoneVerificationContext,
+  verifyPhoneVerificationToken
+} = require('../utils/phoneVerification');
 
 const router = express.Router();
 
@@ -112,7 +120,14 @@ const handleProviderCallback = (provider) => async (req, res) => {
   }
 
   const { idField, verificationFlag, verificationDateField } = config;
-  const { name, email, profilePicture, facebookDataAccess } = req.body;
+  const {
+    name,
+    email,
+    profilePicture,
+    facebookDataAccess,
+    phoneNumber,
+    phoneVerificationToken
+  } = req.body;
   const providerId = req.body[config.idField];
 
   if (!providerId || !email || !name) {
@@ -130,12 +145,22 @@ const handleProviderCallback = (provider) => async (req, res) => {
   let user = await User.findOne(userQuery);
 
   if (!user) {
+    const phoneVerification = verifyPhoneVerificationToken({
+      token: phoneVerificationToken,
+      req,
+      phoneNumber
+    });
+
     user = await User.create({
       [idField]: providerId,
       name,
       email,
       profilePicture,
-      isVerified: false
+      isVerified: false,
+      phoneNumber: phoneVerification.phoneNumber,
+      phoneVerified: true,
+      phoneVerifiedAt: new Date(),
+      phoneVerificationContext: toUserPhoneVerificationContext(phoneVerification)
     });
   } else {
     // Attach provider id if missing
@@ -225,6 +250,45 @@ const handleProviderCallback = (provider) => async (req, res) => {
 
   res.json(buildTokenResponse(user));
 };
+
+router.post('/phone/request-code', asyncHandler(async (req, res) => {
+  const { phoneNumber } = req.body;
+
+  if (!phoneNumber) {
+    throw createHttpError(400, 'Phone number is required');
+  }
+
+  await requestVerificationCode(phoneNumber);
+
+  res.json({
+    message: 'Verification code sent'
+  });
+}));
+
+router.post('/phone/verify', asyncHandler(async (req, res) => {
+  const { phoneNumber, code, deviceLocation } = req.body;
+
+  if (!phoneNumber) {
+    throw createHttpError(400, 'Phone number is required');
+  }
+
+  const verification = await ensurePhoneVerificationRiskChecks({
+    req,
+    phoneNumber,
+    code,
+    deviceLocation
+  });
+
+  res.json({
+    message: 'Phone verified for signup',
+    phoneVerificationToken: buildPhoneVerificationToken(verification),
+    phoneVerification: {
+      lineType: verification.lineType,
+      distanceMiles: verification.distanceMiles,
+      ipGeo: verification.ipGeo
+    }
+  });
+}));
 
 // OAuth callbacks (simplified - integrate with Passport.js or production OAuth in a real app)
 router.post('/facebook/callback', asyncHandler(handleProviderCallback('facebook')));

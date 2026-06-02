@@ -62,6 +62,30 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   phoneVerifiedAt: Date,
+  phoneVerificationContext: {
+    lineType: String,
+    distanceMiles: Number,
+    clientIp: String,
+    ipGeo: {
+      latitude: Number,
+      longitude: Number,
+      accuracyRadiusKm: Number,
+      city: String,
+      subdivision: String,
+      country: String
+    },
+    deviceLocation: {
+      latitude: Number,
+      longitude: Number,
+      accuracy: Number,
+      capturedAt: Date
+    },
+    lookupSummary: {
+      countryCode: String,
+      nationalFormat: String
+    },
+    verifiedAt: Date
+  },
   gender: {
     type: String,
     enum: ['male', 'female', 'other']

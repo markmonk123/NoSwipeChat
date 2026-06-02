@@ -10,6 +10,12 @@ const {
   getComplianceStatus,
   MIN_AGE
 } = require('../utils/compliance');
+const {
+  createHttpError,
+  requestVerificationCode,
+  ensurePhoneVerificationRiskChecks,
+  toUserPhoneVerificationContext
+} = require('../utils/phoneVerification');
 
 const router = express.Router();
 
@@ -134,9 +140,10 @@ router.put('/profile', authMiddleware, asyncHandler(async (req, res) => {
     if (!isValidPhoneNumber(phoneNumber)) {
       return res.status(400).json({ error: 'Invalid phone number format' });
     }
-    updates.phoneNumber = phoneNumber;
+    updates.phoneNumber = String(phoneNumber).trim();
     updates.phoneVerified = false;
     updates.phoneVerifiedAt = undefined;
+    updates.phoneVerificationContext = undefined;
   }
 
   const user = await User.findByIdAndUpdate(
@@ -151,31 +158,47 @@ router.put('/profile', authMiddleware, asyncHandler(async (req, res) => {
   });
 }));
 
-// Phone verification (dev/test code based)
-router.post('/phone/verify', authMiddleware, asyncHandler(async (req, res) => {
-  const { code } = req.body;
-  const expectedCode = process.env.PHONE_VERIFICATION_TEST_CODE || '000000';
-
-  if (!code) {
-    return res.status(400).json({ error: 'Verification code is required' });
-  }
-
+router.post('/phone/request-code', authMiddleware, asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.userId).select('phoneNumber');
   if (!user || !user.phoneNumber) {
-    return res.status(400).json({ error: 'Phone number is required before verification' });
+    throw createHttpError(400, 'Phone number is required before verification');
   }
 
-  if (String(code).trim() !== expectedCode) {
-    return res.status(400).json({ error: 'Invalid verification code' });
+  await requestVerificationCode(user.phoneNumber);
+
+  res.json({
+    message: 'Verification code sent'
+  });
+}));
+
+router.post('/phone/verify', authMiddleware, asyncHandler(async (req, res) => {
+  const { code, deviceLocation } = req.body;
+
+  const user = await User.findById(req.user.userId).select('phoneNumber phoneVerified phoneVerifiedAt');
+  if (!user || !user.phoneNumber) {
+    throw createHttpError(400, 'Phone number is required before verification');
   }
+
+  const verification = await ensurePhoneVerificationRiskChecks({
+    req,
+    phoneNumber: user.phoneNumber,
+    code,
+    deviceLocation
+  });
 
   user.phoneVerified = true;
   user.phoneVerifiedAt = new Date();
+  user.phoneVerificationContext = toUserPhoneVerificationContext(verification);
   await user.save();
 
   res.json({
     message: 'Phone number verified',
-    compliance: getComplianceStatus(user)
+    compliance: getComplianceStatus(user),
+    phoneVerification: {
+      lineType: verification.lineType,
+      distanceMiles: verification.distanceMiles,
+      ipGeo: verification.ipGeo
+    }
   });
 }));
 

@@ -3,9 +3,9 @@ import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
-    ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -18,6 +18,12 @@ import {
   DEFAULT_SOCIAL_DATA_CHOICES,
   SOCIAL_DATA_OPTIONS
 } from '../config/facebookSocialData';
+import {
+  getApiErrorMessage,
+  requestSignupPhoneCode,
+  verifySignupPhoneCode
+} from '../utils/phoneVerification';
+import AppScrollView from '../components/AppScrollView';
 
 const FACEBOOK_GRAPH_FIELDS = 'id,name,email,picture.type(large)';
 
@@ -39,11 +45,73 @@ const fetchFacebookProfile = async (accessToken) => {
 
 const LoginScreen = ({ navigation }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifyingPhone, setIsVerifyingPhone] = useState(false);
   const [socialChoices, setSocialChoices] = useState(DEFAULT_SOCIAL_DATA_CHOICES);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneVerificationCode, setPhoneVerificationCode] = useState('');
+  const [phoneVerificationToken, setPhoneVerificationToken] = useState('');
+  const [phoneStatus, setPhoneStatus] = useState('');
+
+  const handlePhoneNumberChange = (value) => {
+    setPhoneNumber(value);
+    setPhoneVerificationToken('');
+    setPhoneStatus('');
+  };
+
+  const handleRequestPhoneCode = async () => {
+    if (!phoneNumber.trim()) {
+      Alert.alert('Phone number required', 'Enter a mobile number before requesting a verification code.');
+      return;
+    }
+
+    try {
+      setIsSendingCode(true);
+      await requestSignupPhoneCode(phoneNumber.trim());
+      setPhoneStatus('Verification code sent. Enter the code and allow location access to continue.');
+    } catch (error) {
+      Alert.alert('Unable to send code', getApiErrorMessage(error, 'Failed to send verification code'));
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const handleVerifyPhone = async () => {
+    if (!phoneNumber.trim()) {
+      Alert.alert('Phone number required', 'Enter a mobile number before verifying.');
+      return;
+    }
+
+    if (!phoneVerificationCode.trim()) {
+      Alert.alert('Verification code required', 'Enter the SMS code before verifying your phone.');
+      return;
+    }
+
+    try {
+      setIsVerifyingPhone(true);
+      const result = await verifySignupPhoneCode({
+        phoneNumber: phoneNumber.trim(),
+        code: phoneVerificationCode.trim()
+      });
+      setPhoneVerificationToken(result.phoneVerificationToken);
+      setPhoneStatus(
+        `Phone verified. IP and device location matched within ${Math.round(result.phoneVerification?.distanceMiles || 0)} miles.`
+      );
+    } catch (error) {
+      setPhoneVerificationToken('');
+      Alert.alert('Phone verification failed', getApiErrorMessage(error, 'Failed to verify phone'));
+    } finally {
+      setIsVerifyingPhone(false);
+    }
+  };
 
   const handleLogin = async () => {
     try {
       setIsSubmitting(true);
+
+      if (!phoneVerificationToken) {
+        throw new Error('Verify your phone number before continuing with Facebook');
+      }
 
       const facebookAppId = await getFacebookAppId();
 
@@ -73,7 +141,9 @@ const LoginScreen = ({ navigation }) => {
         name: profile.name,
         email: profile.email,
         profilePicture: profile.picture?.data?.url,
-        facebookDataAccess
+        facebookDataAccess,
+        phoneNumber: phoneNumber.trim(),
+        phoneVerificationToken
       });
 
       await persistSession(response.data);
@@ -87,7 +157,7 @@ const LoginScreen = ({ navigation }) => {
         navigation.replace('MainApp');
       }
     } catch (error) {
-      Alert.alert('Login failed', error.message || 'Unable to sign in with Facebook');
+      Alert.alert('Login failed', getApiErrorMessage(error, 'Unable to sign in with Facebook'));
     } finally {
       setIsSubmitting(false);
     }
@@ -102,7 +172,7 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <AppScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.eyebrow}>NoSwipeChat</Text>
         <Text style={styles.title}>Verified matching with a real identity layer.</Text>
         <Text style={styles.subtitle}>
@@ -115,6 +185,65 @@ const LoginScreen = ({ navigation }) => {
         >
           <Text style={styles.secondaryLinkText}>Read the overview and disclaimer again</Text>
         </TouchableOpacity>
+
+        <View style={styles.phoneCard}>
+          <Text style={styles.phoneTitle}>Secondary phone verification</Text>
+          <Text style={styles.phoneIntro}>
+            New accounts must pass SMS verification, avoid VOIP numbers, and match device location
+            against the signup IP routed through nginx.
+          </Text>
+          <TextInput
+            style={styles.phoneInput}
+            placeholder="+15551234567"
+            value={phoneNumber}
+            onChangeText={handlePhoneNumberChange}
+            keyboardType="phone-pad"
+            autoCapitalize="none"
+          />
+          <TextInput
+            style={styles.phoneInput}
+            placeholder="6-digit verification code"
+            value={phoneVerificationCode}
+            onChangeText={setPhoneVerificationCode}
+            keyboardType="number-pad"
+            autoCapitalize="none"
+          />
+          <View style={styles.phoneActionRow}>
+            <TouchableOpacity
+              style={[
+                styles.phoneButton,
+                styles.phoneButtonSecondary,
+                isSendingCode && styles.phoneButtonDisabled
+              ]}
+              onPress={handleRequestPhoneCode}
+              disabled={isSendingCode}
+            >
+              {isSendingCode ? (
+                <ActivityIndicator color="#b35d4e" />
+              ) : (
+                <Text style={styles.phoneButtonTextSecondary}>Send code</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.phoneButton,
+                styles.phoneButtonPrimary,
+                isVerifyingPhone && styles.phoneButtonDisabled
+              ]}
+              onPress={handleVerifyPhone}
+              disabled={isVerifyingPhone}
+            >
+              {isVerifyingPhone ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.phoneButtonTextPrimary}>Verify phone</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.phoneStatus, phoneVerificationToken && styles.phoneStatusVerified]}>
+            {phoneStatus || 'Phone verification must complete before Facebook signup is enabled.'}
+          </Text>
+        </View>
 
         <View style={styles.socialCard}>
           <Text style={styles.socialTitle}>Choose Facebook-linked data to request</Text>
@@ -145,14 +274,19 @@ const LoginScreen = ({ navigation }) => {
         </View>
 
         <TouchableOpacity
-          style={[styles.loginButton, isSubmitting && styles.loginButtonDisabled]}
+          style={[
+            styles.loginButton,
+            (isSubmitting || !phoneVerificationToken) && styles.loginButtonDisabled
+          ]}
           onPress={handleLogin}
-          disabled={isSubmitting}
+          disabled={isSubmitting || !phoneVerificationToken}
         >
           {isSubmitting ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <Text style={styles.loginButtonText}>Continue With Facebook</Text>
+            <Text style={styles.loginButtonText}>
+              {phoneVerificationToken ? 'Continue With Facebook' : 'Verify Phone To Continue'}
+            </Text>
           )}
         </TouchableOpacity>
 
@@ -163,7 +297,7 @@ const LoginScreen = ({ navigation }) => {
           <Text style={styles.policyText}>Facebook identity required</Text>
           <Text style={styles.policyText}>Personality profiling requires explicit opt-in</Text>
         </View>
-      </ScrollView>
+      </AppScrollView>
     </SafeAreaView>
   );
 };
@@ -215,6 +349,79 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: '#b35d4e',
+    fontWeight: '700'
+  },
+  phoneCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#f1d5cf',
+    marginBottom: 18
+  },
+  phoneTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1d1b1a',
+    marginBottom: 8
+  },
+  phoneIntro: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#5d5552',
+    marginBottom: 14
+  },
+  phoneInput: {
+    borderWidth: 1,
+    borderColor: '#f1d5cf',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#1d1b1a',
+    backgroundColor: '#fffaf8',
+    marginBottom: 10
+  },
+  phoneActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 10
+  },
+  phoneButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  phoneButtonPrimary: {
+    backgroundColor: '#f04c3e'
+  },
+  phoneButtonSecondary: {
+    backgroundColor: '#fff3f0',
+    borderWidth: 1,
+    borderColor: '#f1d5cf'
+  },
+  phoneButtonDisabled: {
+    opacity: 0.7
+  },
+  phoneButtonTextPrimary: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700'
+  },
+  phoneButtonTextSecondary: {
+    color: '#b35d4e',
+    fontSize: 14,
+    fontWeight: '700'
+  },
+  phoneStatus: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#8a5a51'
+  },
+  phoneStatusVerified: {
+    color: '#1f7a4d',
     fontWeight: '700'
   },
   socialCard: {

@@ -19,6 +19,9 @@ const { getTextEmbedding, checkEmbeddingsServiceHealth } = require('./utils/embe
 
 const app = express();
 
+// Only nginx should be forwarding client IP information into Express.
+app.set('trust proxy', 1);
+
 // Create HTTP or HTTPS server depending on env-provided cert paths
 let server;
 if (process.env.HTTPS_KEY_PATH && process.env.HTTPS_CERT_PATH) {

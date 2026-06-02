@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -18,6 +17,12 @@ import {
   DEFAULT_SOCIAL_DATA_CHOICES,
   SOCIAL_DATA_OPTIONS
 } from '../config/facebookSocialData';
+import {
+  getApiErrorMessage,
+  requestUserPhoneCode,
+  verifyUserPhoneCode
+} from '../utils/phoneVerification';
+import AppScrollView from '../components/AppScrollView';
 
 const ProfileScreen = () => {
   const [profile, setProfile] = useState(null);
@@ -125,19 +130,41 @@ const ProfileScreen = () => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('authToken');
-      await axios.post(
-        buildApiUrl('/users/phone/verify'),
-        { code: formData.phoneVerificationCode },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await verifyUserPhoneCode({
+        authToken: token,
+        code: formData.phoneVerificationCode
+      });
       await fetchProfile();
       Alert.alert('Success', 'Phone number verified');
     } catch (error) {
-      Alert.alert('Error', error?.response?.data?.error || 'Failed to verify phone');
+      Alert.alert('Error', getApiErrorMessage(error, 'Failed to verify phone'));
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRequestPhoneCode = async () => {
+    const draftPhoneNumber = formData.phoneNumber.trim();
+    const savedPhoneNumber = String(profile?.phoneNumber || '').trim();
+
+    if (!draftPhoneNumber) {
+      Alert.alert('Error', 'Add a phone number before requesting a verification code.');
+      return;
+    }
+
+    if (draftPhoneNumber !== savedPhoneNumber) {
+      Alert.alert('Save profile first', 'Save the updated phone number before requesting a code.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('authToken');
+      await requestUserPhoneCode(token);
+      Alert.alert('Success', 'Verification code sent');
+    } catch (error) {
+      Alert.alert('Error', getApiErrorMessage(error, 'Failed to send verification code'));
       console.error(error);
     } finally {
       setLoading(false);
@@ -232,7 +259,7 @@ const ProfileScreen = () => {
   const socialData = profile?.socialData?.facebook || {};
 
   return (
-    <ScrollView style={styles.container}>
+    <AppScrollView style={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Profile</Text>
         {!isEditing && (
@@ -367,9 +394,26 @@ const ProfileScreen = () => {
               keyboardType="numeric"
             />
 
-            <TouchableOpacity style={styles.verifyButton} onPress={handleVerifyPhone}>
-              <Text style={styles.verifyButtonText}>Verify Phone</Text>
-            </TouchableOpacity>
+            <View style={styles.phoneButtonRow}>
+              <TouchableOpacity
+                style={[styles.verifyButton, styles.phoneCodeButton]}
+                onPress={handleRequestPhoneCode}
+              >
+                <Text style={[styles.verifyButtonText, styles.phoneCodeButtonText]}>Send Code</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.verifyButton, styles.phoneVerifyButton]}
+                onPress={handleVerifyPhone}
+              >
+                <Text style={[styles.verifyButtonText, styles.phoneVerifyButtonText]}>Verify Phone</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.helperText}>
+              Save phone-number changes before requesting a code. Verification also checks device
+              location against the proxied signup IP.
+            </Text>
 
             <Text style={styles.label}>Gender</Text>
             <View style={styles.genderContainer}>
@@ -484,7 +528,7 @@ const ProfileScreen = () => {
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </AppScrollView>
   );
 };
 
@@ -668,20 +712,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
+  helperText: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#666',
+    marginTop: 10,
+  },
   bioInput: {
     height: 100,
     textAlignVertical: 'top',
   },
-  verifyButton: {
+  phoneButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
     marginTop: 10,
+  },
+  verifyButton: {
     backgroundColor: '#ffe5e5',
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
+  phoneCodeButton: {
+    flex: 1,
+  },
+  phoneVerifyButton: {
+    flex: 1,
+    backgroundColor: '#FF6B6B',
+  },
   verifyButtonText: {
     color: '#FF6B6B',
     fontWeight: '700',
+  },
+  phoneCodeButtonText: {
+    color: '#b35d4e',
+  },
+  phoneVerifyButtonText: {
+    color: '#ffffff',
   },
   genderContainer: {
     flexDirection: 'row',
