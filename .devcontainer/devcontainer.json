@@ -1,11 +1,3 @@
 {
-	"image": "mcr.microsoft.com/devcontainers/universal:2",
-	"features": {
-		"ghcr.io/cirolosapio/devcontainers-features/alpine-node:0": {
-			"corepack": true,
-			"pnpmVersion": "latest"
-		},
-		"ghcr.io/cirolosapio/devcontainers-features/alpine-php-posix:0": {},
-		"ghcr.io/cirolosapio/devcontainers-features/alpine-php-redis:0": {}
-	}
+	"image": "mcr.microsoft.com/devcontainers/universal:2"
 }
