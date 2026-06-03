@@ -10,6 +10,7 @@ A mobile app for singles to connect with verified profiles in their city through
 - **Verified Profiles**: All profiles verified through Facebook
 - **Real-Time Messaging**: Instant chat using Socket.io
 - **Nearby Users Discovery**: See who's nearby and their profiles
+- **AI Personality Profiling**: RoBERTa-powered social-data digestion into 73-point profile vectors
 
 ## Project Structure
 
@@ -128,6 +129,29 @@ Server will run on `http://localhost:5000`
 - `GET /users/profile` - Get current user profile
 - `PUT /users/profile` - Update user profile
 - `GET /users/nearby` - Get nearby verified users
+
+## AI Personality Pipeline (RoBERTa + Hugging Face)
+
+- The embeddings service loads a Hugging Face RoBERTa model (`roberta-base` by default).
+- Model artifacts are downloaded during Docker image build so runtime can stay offline on internal networks.
+- New social data submissions trigger automatic personality refresh into:
+  - `personalityProfile.vector73` (73-point system)
+  - `personalityProfile.vector35` (derived for visual orb rendering)
+
+### Configure model source
+
+Set `HF_MODEL_NAME` in your environment before build if you want a different RoBERTa-family model:
+
+```bash
+HF_MODEL_NAME=roberta-base
+```
+
+### Rebuild and run
+
+```bash
+docker compose build embeddings
+docker compose up -d embeddings backend nginx
+```
 
 ## Socket.io Events
 

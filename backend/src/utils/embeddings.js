@@ -59,9 +59,28 @@ async function checkEmbeddingsServiceHealth() {
   }
 }
 
+/**
+ * Build a 73-point personality vector from social text + metrics.
+ * @param {{texts?: Array<string>, metrics?: Record<string, number>}} payload
+ * @returns {Promise<{vector73: Array<number>, vector35: Array<number>, model: string, textSamplesUsed: number, metricsUsed: Record<string, number>}|null>}
+ */
+async function buildPersonalityVector73(payload) {
+  try {
+    const response = await axios.post(`${EMBEDDINGS_SERVICE_URL}/personality-73`, payload, {
+      timeout: 15000
+    });
+
+    return response.data;
+  } catch (err) {
+    console.error('Failed to build personality vector:', err.message);
+    return null;
+  }
+}
+
 module.exports = {
   getTextEmbedding,
   getTextEmbeddingsBatch,
   checkEmbeddingsServiceHealth,
+  buildPersonalityVector73,
   EMBEDDINGS_SERVICE_URL
 };

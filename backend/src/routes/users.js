@@ -16,6 +16,7 @@ const {
   ensurePhoneVerificationRiskChecks,
   toUserPhoneVerificationContext
 } = require('../utils/phoneVerification');
+const { autoPopulatePersonalityProfile } = require('../utils/personalityAutomation');
 
 const router = express.Router();
 
@@ -151,6 +152,20 @@ router.put('/profile', authMiddleware, asyncHandler(async (req, res) => {
     updates,
     { new: true }
   );
+
+  const hasProfileTextSignal = (typeof bio === 'string' && bio.trim().length > 0) ||
+    (Array.isArray(interests) && interests.some((item) => String(item || '').trim().length > 0));
+
+  if (hasProfileTextSignal) {
+    const personalityResult = await autoPopulatePersonalityProfile({
+      userId: req.user.userId,
+      source: 'profile_text_update'
+    });
+
+    if (!personalityResult?.updated) {
+      console.warn('Personality profile was not updated from profile text:', personalityResult?.reason);
+    }
+  }
 
   res.json({
     ...user.toObject(),
@@ -316,9 +331,24 @@ router.put('/social-data', authMiddleware, asyncHandler(async (req, res) => {
     return res.status(404).json({ error: 'User not found' });
   }
 
+  const hasAnySocialFieldEnabled = SOCIAL_DATA_FIELDS.some((field) => facebook?.[field]?.status === true);
+  let personalityProfile = undefined;
+
+  if (hasAnySocialFieldEnabled) {
+    const personalityResult = await autoPopulatePersonalityProfile({
+      userId: req.user.userId,
+      source: 'social_data_settings_update'
+    });
+    personalityProfile = personalityResult?.personalityProfile;
+    if (!personalityResult?.updated) {
+      console.warn('Personality profile was not updated from social settings:', personalityResult?.reason);
+    }
+  }
+
   res.json({
     socialDataSettings: updated.socialDataSettings,
-    socialData: updated.socialData
+    socialData: updated.socialData,
+    personalityProfile
   });
 }));
 

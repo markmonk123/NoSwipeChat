@@ -1,37 +1,24 @@
 import React from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 
 const AppScrollView = ({ children, style, contentContainerStyle, ...scrollProps }) => {
-  if (Platform.OS !== 'web') {
-    return (
-      <ScrollView
-        style={style}
-        contentContainerStyle={contentContainerStyle}
-        {...scrollProps}
-      >
-        {children}
-      </ScrollView>
-    );
-  }
-
   return (
-    <View style={[styles.webScrollRoot, style]}>
-      <View style={[styles.webScrollContent, contentContainerStyle]}>
-        {children}
-      </View>
-    </View>
+    <ScrollView
+      style={[styles.scrollRoot, style]}
+      contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
+      {...scrollProps}
+    >
+      {children}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  webScrollRoot: {
-    flex: 1,
-    minHeight: 0,
-    alignSelf: 'stretch',
-    overflow: 'auto'
+  scrollRoot: {
+    flex: 1
   },
-  webScrollContent: {
-    minHeight: '100%'
+  scrollContent: {
+    flexGrow: 1
   }
 });
 

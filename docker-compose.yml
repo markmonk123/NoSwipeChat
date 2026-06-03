@@ -81,11 +81,14 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+      args:
+        HF_MODEL_NAME: ${HF_MODEL_NAME:-roberta-base}
       # pip install runs at build time (internet access available);
       # the runtime container is on the internal-only network.
     container_name: noswipechat-embeddings
     environment:
       - PYTHONUNBUFFERED=1
+      - HF_MODEL_NAME=${HF_MODEL_NAME:-roberta-base}
     restart: unless-stopped
     # Internal network only – not reachable from the internet
     networks:

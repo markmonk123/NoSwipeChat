@@ -16,6 +16,7 @@ const chatRoutes = require('./routes/chat');
 const userRoutes = require('./routes/users');
 const { errorHandler } = require('./middleware/errorHandler');
 const { getTextEmbedding, checkEmbeddingsServiceHealth } = require('./utils/embeddings');
+const { autoPopulatePersonalityProfile } = require('./utils/personalityAutomation');
 
 const app = express();
 
@@ -227,6 +228,15 @@ io.on('connection', (socket) => {
         userId,
         city,
         message: trimmedMessage
+      });
+
+      // Keep the 73-point profile in sync as fresh social/chat text arrives.
+      autoPopulatePersonalityProfile({
+        userId,
+        source: 'chat_message_submission',
+        recentMessages: [{ message: trimmedMessage }]
+      }).catch((error) => {
+        console.error('Background personality sync failed:', error.message);
       });
 
       // Optional: Get embedding for message if embeddings service is healthy

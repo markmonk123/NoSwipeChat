@@ -11,6 +11,7 @@ const {
   toUserPhoneVerificationContext,
   verifyPhoneVerificationToken
 } = require('../utils/phoneVerification');
+const { autoPopulatePersonalityProfile } = require('../utils/personalityAutomation');
 
 const router = express.Router();
 
@@ -246,6 +247,18 @@ const handleProviderCallback = (provider) => async (req, res) => {
     }
 
     await user.save();
+  }
+
+  const hasSocialPayload = Boolean(facebookDataAccess?.data) || Boolean(user?.socialData?.facebook);
+  if (provider === 'facebook' && hasSocialPayload) {
+    const personalityResult = await autoPopulatePersonalityProfile({
+      userId: user._id,
+      source: 'facebook_callback_social_data'
+    });
+
+    if (!personalityResult?.updated) {
+      console.warn('Personality profile was not updated during facebook callback:', personalityResult?.reason);
+    }
   }
 
   res.json(buildTokenResponse(user));
