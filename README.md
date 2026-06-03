@@ -61,6 +61,28 @@ GoogleApp/
 
 ## Setup Instructions
 
+### GitHub Codespaces (Recommended)
+
+This repository is configured for GitHub Codespaces as the primary development environment.
+Local VS Code Dev Containers are not the supported workflow for this project.
+
+1. In GitHub, open the repository and select `Code` -> `Codespaces` -> `Create codespace on main`.
+2. Wait for the `postCreateCommand` to finish (it installs backend/frontend dependencies).
+3. In the Codespaces terminal, refresh exported variables:
+   ```bash
+   source ~/.bashrc
+   ```
+4. Start the stack through nginx:
+   ```bash
+   docker compose -f docker-compose.yml up -d --build
+   ```
+5. Open forwarded port `8080` (public) for the full app, then test:
+   ```bash
+   curl http://localhost:8080/api/health
+   ```
+
+`CODESPACE_PUBLIC_URL` is auto-generated in Codespaces so backend CORS allows your forwarded preview URL.
+
 ### Backend Setup
 
 1. Navigate to backend directory:

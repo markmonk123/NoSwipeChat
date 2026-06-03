@@ -1,3 +1,45 @@
 {
-	"image": "mcr.microsoft.com/devcontainers/universal:2"
+  "name": "NoSwipeChat Codespaces",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+  "customizations": {
+    "codespaces": {
+      "openFiles": [
+        "README.md",
+        "NETWORKING.md"
+      ]
+    },
+    "vscode": {
+      "extensions": [
+        "openai.chatgpt",
+        "ms-azuretools.vscode-docker",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  },
+  "forwardPorts": [
+    8080,
+    5000,
+    8000
+  ],
+  "portsAttributes": {
+    "8080": {
+      "label": "NoSwipeChat (nginx)",
+      "onAutoForward": "openPreview",
+      "visibility": "public"
+    },
+    "5000": {
+      "label": "Backend API",
+      "onAutoForward": "notify",
+      "visibility": "private"
+    },
+    "8000": {
+      "label": "Embeddings API",
+      "onAutoForward": "silent",
+      "visibility": "private"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/scripts/post-create.sh"
 }

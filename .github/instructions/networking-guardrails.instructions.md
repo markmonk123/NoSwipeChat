@@ -1,7 +1,7 @@
----
-description: "Use when editing docker compose, nginx, or container networking config. Enforce a single external entrypoint through nginx and keep backend services internal-only in NoSwipeChat."
-name: "Networking Guardrails"
-applyTo:
+
+- description: "Use when editing docker compose, nginx, or container networking config. Enforce a single external entrypoint through nginx and keep backend services internal-only in NoSwipeChat."
+- name: "Networking Guardrails"
+- applyTo:
   - docker-compose.yml
   - compose.yaml
   - compose.debug.yaml
