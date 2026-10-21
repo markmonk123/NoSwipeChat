@@ -10,6 +10,8 @@ const {
   getComplianceStatus,
   MIN_AGE
 } = require('../utils/compliance');
+const { buildProfileUpdate } = require('../utils/profileValidation');
+const profileFields = require('../config/profileFields');
 
 const router = express.Router();
 
@@ -76,6 +78,27 @@ router.get('/profile', authMiddleware, asyncHandler(async (req, res) => {
   res.json(payload);
 }));
 
+// Accepted values for the enum-backed profile fields. Clients should treat
+// this as the source of truth rather than hardcoding option lists.
+router.get('/profile/options', authMiddleware, (req, res) => {
+  res.json({
+    gender: profileFields.GENDER_VALUES,
+    education: profileFields.EDUCATION_VALUES,
+    spirituality: profileFields.SPIRITUALITY_VALUES,
+    ethnicity: profileFields.ETHNICITY_VALUES,
+    relationshipStatus: profileFields.RELATIONSHIP_STATUS_VALUES,
+    listFields: profileFields.listFields,
+    limits: {
+      listLength: profileFields.STRING_ARRAY_LIMIT,
+      listItemLength: profileFields.STRING_ARRAY_ITEM_MAX_LENGTH,
+      shortTextLength: profileFields.SHORT_TEXT_MAX_LENGTH,
+      bioLength: profileFields.BIO_MAX_LENGTH,
+      minAge: profileFields.MIN_AGE,
+      maxAge: profileFields.MAX_AGE
+    }
+  });
+});
+
 // Compliance status helper
 router.get('/compliance', authMiddleware, asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.userId).select('facebookId phoneVerified dateOfBirth');
@@ -86,26 +109,31 @@ router.get('/compliance', authMiddleware, asyncHandler(async (req, res) => {
   res.json({ compliance: getComplianceStatus(user) });
 }));
 
-// Update user profile
+//
+// Update user profile.
+//
+// Accepts every profile field in one request; any field omitted from the body
+// is left untouched. Passing an empty string or null for a field clears it.
+//
+// Validated profile fields: age, gender, education, spirituality,
+// ethnicity, relationshipStatus, hometown, locationLabel, city, bio,
+// interests, hobbies, skillsets, dateOfBirth, phoneNumber.
+//
+// GET /users/profile/options lists the accepted enum values.
 router.put('/profile', authMiddleware, asyncHandler(async (req, res) => {
   const {
-    age,
-    gender,
-    bio,
-    city,
     latitude,
     longitude,
-    interests,
     dateOfBirth,
     phoneNumber
   } = req.body;
 
+  // Throws ProfileValidationError (400) on an invalid field. Centralized
+  // error middleware formats the response.
+  const { set, unset } = buildProfileUpdate(req.body);
+
   const updates = {
-    age,
-    gender,
-    bio,
-    city,
-    interests,
+    ...set,
     updatedAt: new Date()
   };
 
@@ -136,14 +164,23 @@ router.put('/profile', authMiddleware, asyncHandler(async (req, res) => {
     }
     updates.phoneNumber = phoneNumber;
     updates.phoneVerified = false;
-    updates.phoneVerifiedAt = undefined;
+    unset.phoneVerifiedAt = '';
+  }
+
+  const updateDoc = { $set: updates };
+  if (Object.keys(unset).length > 0) {
+    updateDoc['$unset'] = unset;
   }
 
   const user = await User.findByIdAndUpdate(
     req.user.userId,
-    updates,
-    { new: true }
+    updateDoc,
+    { new: true, runValidators: true }
   );
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
 
   res.json({
     ...user.toObject(),

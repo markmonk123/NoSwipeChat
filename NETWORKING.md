@@ -40,6 +40,7 @@ The stack uses **two Docker networks** to enforce runtime internet isolation:
 - **nginx** is on **both** networks: it accepts traffic from the internet and proxies it to internal services.
 - **backend**, **embeddings**, and **mongo** are on the internal-only network and cannot initiate outbound internet connections at runtime.
 - Internet access during build (`npm install`, `pip install`) is unaffected — Docker builds always run with internet access.
+- The embeddings image downloads `roberta-base` during its build and caches it in the image; Hugging Face runs offline at runtime.
 
 ## Service Communication
 
@@ -92,7 +93,7 @@ docker exec noswipechat-nginx wget -q -O- http://embeddings:8000/health
 
 # Test through nginx from host
 curl http://localhost:8080/api/status
-curl -X POST http://localhost:8080/embeddings/health
+curl http://localhost:8080/embeddings/health
 ```
 
 ## Updating Dependencies

@@ -115,11 +115,15 @@ RUN npm install --omit=dev   # ← build time, internet ✓
 ```dockerfile
 FROM python:3.11-slim AS builder
 RUN pip install -r requirements.txt   # ← build time, internet ✓
+RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='roberta-base')"
 
 FROM python:3.11-slim
 COPY --from=builder /usr/local/lib/python3.11/site-packages ...
-# Runtime image: no pip, no internet needed
+COPY --from=builder /opt/huggingface /opt/huggingface
+# Runtime image: cached model, Hugging Face offline, no internet needed
 ```
+
+The runtime embeddings service uses the cached `roberta-base` files because its internal-only network intentionally blocks model downloads.
 
 ### Updating dependencies
 

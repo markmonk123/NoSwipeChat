@@ -18,6 +18,66 @@ import {
   DEFAULT_SOCIAL_DATA_CHOICES,
   SOCIAL_DATA_OPTIONS
 } from '../config/facebookSocialData';
+import {
+  profileFieldLabels,
+  toListText,
+  fromListText,
+  labelFor
+} from '../config/profileFields';
+
+// Options-driven dropdown for the enum-backed profile fields. Values come
+// from profileFieldLabels and mirror the enums the API accepts.
+const EnumSelector = ({ label, field, options = [], value, onChange }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <View style={styles.fieldGroup}>
+      <Text style={styles.label}>{label}</Text>
+      <TouchableOpacity
+        style={styles.select}
+        onPress={() => setOpen((prev) => !prev)}
+      >
+        <Text style={value ? styles.selectValue : styles.selectPlaceholder}>
+          {value ? labelFor(field, value) : `Select ${label.toLowerCase()}`}
+        </Text>
+        <Text style={styles.selectChevron}>{open ? '\u25BC' : '\u25B6'}</Text>
+      </TouchableOpacity>
+
+      {open && (
+        <View style={styles.selectMenu}>
+          <TouchableOpacity
+            style={styles.selectOption}
+            onPress={() => {
+              onChange('');
+              setOpen(false);
+            }}
+          >
+            <Text style={styles.selectOptionText}>Not specified</Text>
+          </TouchableOpacity>
+          {options.map((option) => (
+            <TouchableOpacity
+              key={option}
+              style={styles.selectOption}
+              onPress={() => {
+                onChange(option);
+                setOpen(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.selectOptionText,
+                  value === option && styles.selectOptionTextSelected,
+                ]}
+              >
+                {labelFor(field, option)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
 
 const ProfileScreen = () => {
   const [profile, setProfile] = useState(null);
@@ -25,11 +85,20 @@ const ProfileScreen = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [socialChoices, setSocialChoices] = useState(DEFAULT_SOCIAL_DATA_CHOICES);
+  const [profileOptions, setProfileOptions] = useState(profileFieldLabels);
   const [formData, setFormData] = useState({
     age: '',
     gender: '',
+    education: '',
+    spirituality: '',
+    ethnicity: '',
+    relationshipStatus: '',
+    hometown: '',
+    locationLabel: '',
     bio: '',
     interests: '',
+    hobbies: '',
+    skillsets: '',
     dateOfBirth: '',
     phoneNumber: '',
     phoneVerificationCode: '',
@@ -39,10 +108,36 @@ const ProfileScreen = () => {
     fetchProfile();
   }, []);
 
+  // Enum values come from the API so this screen never drifts from what the
+  // backend accepts. Falls back to the bundled labels if the call fails.
+  const fetchProfileOptions = async (token) => {
+    try {
+      const response = await axios.get(buildApiUrl('/users/profile/options'), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = response.data || {};
+      setProfileOptions((prev) => ({
+        ...prev,
+        gender: data.gender?.length ? data.gender : prev.gender,
+        education: data.education?.length ? data.education : prev.education,
+        spirituality: data.spirituality?.length ? data.spirituality : prev.spirituality,
+        ethnicity: data.ethnicity?.length ? data.ethnicity : prev.ethnicity,
+        relationshipStatus: data.relationshipStatus?.length
+          ? data.relationshipStatus
+          : prev.relationshipStatus,
+      }));
+    } catch (error) {
+      console.warn('Using built-in profile options', error);
+    }
+  };
+
   const fetchProfile = async () => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('authToken');
+      fetchProfileOptions(token);
 
       const response = await axios.get(buildApiUrl('/users/profile'), {
         headers: {
@@ -63,8 +158,16 @@ const ProfileScreen = () => {
         ...prev,
         age: data.age?.toString() || '',
         gender: data.gender || '',
+        education: data.education || '',
+        spirituality: data.spirituality || '',
+        ethnicity: data.ethnicity || '',
+        relationshipStatus: data.relationshipStatus || '',
+        hometown: data.hometown || '',
+        locationLabel: data.locationLabel || '',
         bio: data.bio || '',
-        interests: data.interests?.join(', ') || '',
+        interests: toListText(data.interests),
+        hobbies: toListText(data.hobbies),
+        skillsets: toListText(data.skillsets),
         dateOfBirth: data.dateOfBirth ? data.dateOfBirth.slice(0, 10) : '',
         phoneNumber: data.phoneNumber || '',
       }));
@@ -81,22 +184,40 @@ const ProfileScreen = () => {
       setLoading(true);
       const token = await AsyncStorage.getItem('authToken');
 
-      // Get location
-      const location = await Location.getCurrentPositionAsync({});
+      // Location is optional: a user may edit their profile without granting
+      // location permission, so fall back to leaving the stored point alone.
+      let coordinates;
+      try {
+        const location = await Location.getCurrentPositionAsync({});
+        coordinates = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        };
+      } catch (locError) {
+        console.warn('Location unavailable, keeping existing coordinates', locError);
+      }
+
+      const payload = {
+        age: formData.age === '' ? null : Number(formData.age),
+        gender: formData.gender,
+        education: formData.education,
+        spirituality: formData.spirituality,
+        ethnicity: formData.ethnicity,
+        relationshipStatus: formData.relationshipStatus,
+        hometown: formData.hometown,
+        locationLabel: formData.locationLabel,
+        bio: formData.bio,
+        interests: fromListText(formData.interests),
+        hobbies: fromListText(formData.hobbies),
+        skillsets: fromListText(formData.skillsets),
+        dateOfBirth: formData.dateOfBirth,
+        phoneNumber: formData.phoneNumber,
+        ...(coordinates || {}),
+      };
 
       const response = await axios.put(
         buildApiUrl('/users/profile'),
-        {
-          age: parseInt(formData.age),
-          gender: formData.gender,
-          bio: formData.bio,
-          interests: formData.interests.split(',').map((i) => i.trim()),
-          dateOfBirth: formData.dateOfBirth,
-          phoneNumber: formData.phoneNumber,
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          city: profile?.city || 'Unknown',
-        },
+        payload,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -109,7 +230,11 @@ const ProfileScreen = () => {
       setIsEditing(false);
       Alert.alert('Success', 'Profile updated successfully');
     } catch (error) {
-      Alert.alert('Error', error?.response?.data?.error || 'Failed to update profile');
+      const payload = error?.response?.data?.error;
+      const message =
+        (typeof payload === 'string' ? payload : payload?.message) ||
+        'Failed to update profile';
+      Alert.alert('Error', message);
       console.error(error);
     } finally {
       setLoading(false);
@@ -371,29 +496,56 @@ const ProfileScreen = () => {
               <Text style={styles.verifyButtonText}>Verify Phone</Text>
             </TouchableOpacity>
 
-            <Text style={styles.label}>Gender</Text>
-            <View style={styles.genderContainer}>
-              {['male', 'female', 'other'].map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={[
-                    styles.genderOption,
-                    formData.gender === option && styles.genderOptionSelected,
-                  ]}
-                  onPress={() => setFormData({ ...formData, gender: option })}
-                >
-                  <Text
-                    style={[
-                      styles.genderOptionText,
-                      formData.gender === option && styles.genderOptionTextSelected,
-                    ]}
-                  >
-                    {option.charAt(0).toUpperCase() + option.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <EnumSelector
+              label="Gender"
+              field="gender"
+              options={profileOptions.gender}
+              value={formData.gender}
+              onChange={(value) => setFormData({ ...formData, gender: value })}
+            />
+            <EnumSelector
+              label="Education"
+              field="education"
+              options={profileOptions.education}
+              value={formData.education}
+              onChange={(value) => setFormData({ ...formData, education: value })}
+            />
+            <EnumSelector
+              label="Spirituality / Beliefs"
+              field="spirituality"
+              options={profileOptions.spirituality}
+              value={formData.spirituality}
+              onChange={(value) => setFormData({ ...formData, spirituality: value })}
+            />
+            <EnumSelector
+              label="Ethnicity"
+              field="ethnicity"
+              options={profileOptions.ethnicity}
+              value={formData.ethnicity}
+              onChange={(value) => setFormData({ ...formData, ethnicity: value })}
+            />
+            <EnumSelector
+              label="Relationship Status"
+              field="relationshipStatus"
+              options={profileOptions.relationshipStatus}
+              value={formData.relationshipStatus}
+              onChange={(value) => setFormData({ ...formData, relationshipStatus: value })}
+            />
+            <Text style={styles.label}>Hometown</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., San Antonio, TX"
+              value={formData.hometown}
+              onChangeText={(text) => setFormData({ ...formData, hometown: text })}
+            />
 
+            <Text style={styles.label}>Location</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Austin, TX or Remote (EST)"
+              value={formData.locationLabel}
+              onChangeText={(text) => setFormData({ ...formData, locationLabel: text })}
+            />
             <Text style={styles.label}>Bio</Text>
             <TextInput
               style={[styles.input, styles.bioInput]}
@@ -409,6 +561,21 @@ const ProfileScreen = () => {
               placeholder="e.g., Travel, Music, Hiking"
               value={formData.interests}
               onChangeText={(text) => setFormData({ ...formData, interests: text })}
+            />
+            <Text style={styles.label}>Hobbies (comma-separated)</Text>
+            <TextInput
+              style={[styles.input, styles.bioInput]}
+              placeholder="e.g., Climbing, Cooking, Photography"
+              value={formData.hobbies}
+              onChangeText={(text) => setFormData({ ...formData, hobbies: text })}
+            />
+
+            <Text style={styles.label}>Skillsets (comma-separated)</Text>
+            <TextInput
+              style={[styles.input, styles.bioInput]}
+              placeholder="e.g., React, Python, Graphic design"
+              value={formData.skillsets}
+              onChangeText={(text) => setFormData({ ...formData, skillsets: text })}
             />
 
             <View style={styles.buttonContainer}>
@@ -455,7 +622,7 @@ const ProfileScreen = () => {
               <>
                 <Text style={styles.label}>Gender</Text>
                 <Text style={styles.displayText}>
-                  {profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)}
+                  {labelFor('gender', profile.gender)}
                 </Text>
               </>
             )}
@@ -475,6 +642,73 @@ const ProfileScreen = () => {
                     </View>
                   ))}
                 </View>
+              </>
+            )}            {profile.hobbies?.length > 0 && (
+              <>
+                <Text style={styles.label}>Hobbies</Text>
+                <View style={styles.interestsContainer}>
+                  {profile.hobbies.map((item, index) => (
+                    <View key={index} style={styles.interestTag}>
+                      <Text style={styles.interestText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+            {profile.skillsets?.length > 0 && (
+              <>
+                <Text style={styles.label}>Skillsets</Text>
+                <View style={styles.interestsContainer}>
+                  {profile.skillsets.map((item, index) => (
+                    <View key={index} style={styles.interestTag}>
+                      <Text style={styles.interestText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+            {profile.education && (
+              <>
+                <Text style={styles.label}>Education</Text>
+                <Text style={styles.displayText}>
+                  {labelFor("education", profile.education)}
+                </Text>
+              </>
+            )}
+            {profile.spirituality && (
+              <>
+                <Text style={styles.label}>Spirituality / Beliefs</Text>
+                <Text style={styles.displayText}>
+                  {labelFor("spirituality", profile.spirituality)}
+                </Text>
+              </>
+            )}
+            {profile.ethnicity && (
+              <>
+                <Text style={styles.label}>Ethnicity</Text>
+                <Text style={styles.displayText}>
+                  {labelFor("ethnicity", profile.ethnicity)}
+                </Text>
+              </>
+            )}
+            {profile.relationshipStatus && (
+              <>
+                <Text style={styles.label}>Relationship Status</Text>
+                <Text style={styles.displayText}>
+                  {labelFor("relationshipStatus", profile.relationshipStatus)}
+                </Text>
+              </>
+            )}
+            {profile.hometown && (
+              <>
+                <Text style={styles.label}>Hometown</Text>
+                <Text style={styles.displayText}>{profile.hometown}</Text>
+              </>
+            )}
+            {profile.locationLabel && (
+              <>
+                <Text style={styles.label}>Location</Text>
+                <Text style={styles.displayText}>{profile.locationLabel}</Text>
               </>
             )}
           </>
@@ -682,6 +916,57 @@ const styles = StyleSheet.create({
   verifyButtonText: {
     color: '#FF6B6B',
     fontWeight: '700',
+  },
+  fieldGroup: {
+    marginBottom: 4,
+  },
+  select: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+  },
+  selectValue: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
+  },
+  selectPlaceholder: {
+    fontSize: 14,
+    color: '#999',
+    flex: 1,
+  },
+  selectChevron: {
+    fontSize: 12,
+    color: '#999',
+    marginLeft: 8,
+  },
+  selectMenu: {
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  selectOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+  },
+  selectOptionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectOptionTextSelected: {
+    fontWeight: '700',
+    color: '#FF6B6B',
   },
   genderContainer: {
     flexDirection: 'row',

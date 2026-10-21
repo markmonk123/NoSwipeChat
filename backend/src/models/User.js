@@ -1,4 +1,15 @@
 const mongoose = require('mongoose');
+const {
+  GENDER_VALUES,
+  EDUCATION_VALUES,
+  SPIRITUALITY_VALUES,
+  ETHNICITY_VALUES,
+  RELATIONSHIP_STATUS_VALUES,
+  BIO_MAX_LENGTH,
+  SHORT_TEXT_MAX_LENGTH,
+  MIN_AGE,
+  MAX_AGE
+} = require('../config/profileFields');
 
 const socialConsentSchema = new mongoose.Schema({
   status: {
@@ -53,9 +64,45 @@ const userSchema = new mongoose.Schema({
     unique: true
   },
   profilePicture: String,
-  bio: String,
-  age: Number,
+  bio: {
+    type: String,
+    trim: true,
+    maxlength: BIO_MAX_LENGTH
+  },
+  // Self-reported age. dateOfBirth remains the source of truth for the
+  // adult compliance check; this is a convenience display value.
+  age: {
+    type: Number,
+    min: MIN_AGE,
+    max: MAX_AGE
+  },
   dateOfBirth: Date,
+  /** Education level. */
+  education: {
+    type: String,
+    enum: EDUCATION_VALUES
+  },
+  /**
+   * Spirituality / religious belief. Covers religious affiliation as well as
+   * spiritual-but-not-religious, agnostic, and atheist positions.
+   */
+  spirituality: {
+    type: String,
+    enum: SPIRITUALITY_VALUES
+  },
+  ethnicity: {
+    type: String,
+    enum: ETHNICITY_VALUES
+  },
+  relationshipStatus: {
+    type: String,
+    enum: RELATIONSHIP_STATUS_VALUES
+  },
+  hometown: {
+    type: String,
+    trim: true,
+    maxlength: SHORT_TEXT_MAX_LENGTH
+  },
   phoneNumber: String,
   phoneVerified: {
     type: Boolean,
@@ -64,7 +111,7 @@ const userSchema = new mongoose.Schema({
   phoneVerifiedAt: Date,
   gender: {
     type: String,
-    enum: ['male', 'female', 'other']
+    enum: GENDER_VALUES
   },
   isVerified: {
     type: Boolean,
@@ -82,6 +129,13 @@ const userSchema = new mongoose.Schema({
     }
   },
   city: String,
+  // Human-readable location label, e.g. 'Brooklyn, NY' or 'Remote (EST)'.
+  // Distinct from the city field and from the GeoJSON point below.
+  locationLabel: {
+    type: String,
+    trim: true,
+    maxlength: SHORT_TEXT_MAX_LENGTH
+  },
   blockedUsers: {
     type: [mongoose.Schema.Types.ObjectId],
     ref: 'User',
@@ -92,6 +146,14 @@ const userSchema = new mongoose.Schema({
     default: 50 // km
   },
   interests: [String],
+  hobbies: {
+    type: [String],
+    default: []
+  },
+  skillsets: {
+    type: [String],
+    default: []
+  },
   personalityProfile: {
     vector35: [Number],
     vector73: [Number],

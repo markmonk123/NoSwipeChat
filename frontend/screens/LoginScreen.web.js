@@ -8,6 +8,7 @@ import {
   View,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { buildApiUrl, getFacebookAppId } from '../config/runtime';
@@ -37,6 +38,7 @@ const fetchFacebookProfile = async (accessToken) => {
 };
 
 const LoginScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [socialChoices, setSocialChoices] = useState(DEFAULT_SOCIAL_DATA_CHOICES);
 
@@ -132,7 +134,19 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
+    <ScrollView
+      style={[
+        styles.container,
+        {
+          position: 'absolute',
+          top: insets.top,
+          bottom: insets.bottom,
+          left: 0,
+          right: 0
+        }
+      ]}
+      contentContainerStyle={styles.containerContent}
+    >
       <View style={styles.content}>
         <Text style={styles.eyebrow}>NoSwipeChat</Text>
         <Text style={styles.title}>Verified matching with a real identity layer.</Text>

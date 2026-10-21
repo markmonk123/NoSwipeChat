@@ -14,10 +14,17 @@ RUN pip install --no-cache-dir \
     --disable-pip-version-check \
     -r requirements.txt
 
+# Cache the model during the build so the isolated runtime does not need internet.
+ENV HF_HOME=/opt/huggingface
+RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='roberta-base')"
+
 # Stage 2: Runtime
 FROM python:3.11-slim
 
 WORKDIR /app
+ENV HF_HOME=/opt/huggingface \
+    HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1
 
 # Install runtime dependencies (libgomp for torch)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -27,6 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy Python packages from builder
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /opt/huggingface /opt/huggingface
 
 # Copy application code
 COPY main.py .

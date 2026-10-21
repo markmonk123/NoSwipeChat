@@ -1,12 +1,13 @@
 import React from 'react';
 import {
-  SafeAreaView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const HOW_IT_WORKS = [
   'Sign in with Facebook so NoSwipeChat starts from a real identity layer instead of anonymous swiping.',
@@ -48,10 +49,21 @@ const DISCLAIMER_POINTS = [
 ];
 
 const WelcomeScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <ScrollView
-        style={styles.container}
+        style={[
+          styles.container,
+          {
+            position: 'absolute',
+            top: insets.top,
+            bottom: insets.bottom,
+            left: 0,
+            right: 0
+          }
+        ]}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -126,17 +138,21 @@ const WelcomeScreen = ({ navigation }) => {
           Continuing takes you to sign-in so you can start using NoSwipeChat.
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    minHeight: 0,
+    height: Platform.OS === 'web' ? '100vh' : '100%',
     backgroundColor: '#fff7f3'
   },
   container: {
-    flex: 1
+    flex: 1,
+    minHeight: 0,
+    overflow: 'scroll'
   },
   content: {
     paddingHorizontal: 24,

@@ -121,7 +121,7 @@ services:
       - noswipechat-internal   # Proxy to internal services
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
       interval: 30s
       timeout: 5s
       start_period: 10s
