@@ -1,47 +1,129 @@
+# Dependencies
+# Installed packages never belong in version control.
+# Explicit roots for this repo:
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+# Plus any other package manager or nested path:
+**/node_modules/
+jspm_packages/
+bower_components/
+
+# Python dependencies
+site-packages/
+**/site-packages/
+.Python/
+pip-wheel-metadata/
+__pycache__/
+**/__pycache__/
+.venv/
+venv/
+env/
+.eggs/
+*.egg-info/
+
+# Java / JVM
+.gradle/
+**/.gradle/
+*.class
+
+# Other language toolchains
+target/
+**/target/
+.stack-work/
+
+# Package-manager caches and install state
+.npm/
+.npmrc.local
+.yarn/
+.yarn/cache/
+.yarn/install-state.gz
+.pnp.*
+.pnpm-store/
+.pnpm-debug.log*
+.bun/
+.cache/
+.expo/
+**/.expo/
+
+# Lockfiles inside vendored dependency trees.
+# Root and workspace lockfiles stay tracked so installs stay reproducible.
+**/node_modules/**/package-lock.json
+**/node_modules/**/yarn.lock
+**/node_modules/**/pnpm-lock.yaml
+
+# Build / bundler output
+dist/
+build/
+out/
+**/dist/
+**/build/
+**/out/
+coverage/
+**/coverage/
+.next/
+.nuxt/
+.turbo/
+.parcel-cache/
+*.tsbuildinfo
+.expo-shared/
+
+# Test and tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nyc_output/
+.sass-cache/
+
+# Compiled binaries and local artifacts
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.exe
+*.log
+*.pid
+*.seed
+
+# Environment and secret files
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+*.keystore
+*.jks
+
 # OS / editor
 .DS_Store
+Thumbs.db
+Desktop.ini
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Local tooling
-.codex
+# Local tooling and deployment state
+.codex/
+.agents/
 .deployment-marker
 
+# Downloaded local data / large binaries
+backend/certs/
+backend/GeoLite2-City_*/
+*.mmdb
+
+# Test scratch files
+_*.js
+_*.py
+
 # Logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Environment files
-.env
-.env.local
-.env.*.local
-!.env.example
-!**/.env.example
-
-# Dependencies
-node_modules/
-**/node_modules/
-
-# Build output
-dist/
-build/
-coverage/
-**/dist/
-**/build/
-
-# Expo / frontend local state
-frontend/.expo/
-
-# Python cache / virtualenvs
-__pycache__/
-.pytest_cache/
-.venv/
-venv/
-
-# Local certificates and downloaded data
-backend/certs/
-backend/GeoLite2-City_*/
+pnpm-debug.log*
+lerna-debug.log*
